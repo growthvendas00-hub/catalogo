@@ -91,7 +91,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_ANON
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Use somente a anon key. Não adicione `service_role` ao projeto web.
+`NEXT_PUBLIC_SITE_URL` é opcional: localmente o fallback é `http://localhost:3000` e, na Vercel, a URL do deploy é detectada automaticamente. Se você preencher a variável, use a URL completa com `https://`. Use somente a anon key. Não adicione `service_role` ao projeto web.
 
 ### Criar o primeiro administrador
 
