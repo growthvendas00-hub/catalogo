@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { CheckoutForm } from "@/components/checkout-form";
 import { DEMO_MEASUREMENTS_NOTICE } from "@/lib/demo-data";
 import { formatPrice, onlyDigits } from "@/lib/format";
 import type { CatalogSettings, Product } from "@/types/catalog";
@@ -8,7 +9,7 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   return <div className="grid grid-cols-[7.5rem_1fr] gap-3 border-t fine-rule py-3 text-sm"><dt className="eyebrow pt-[.15rem] text-black/50">{label}</dt><dd className="leading-relaxed">{value}</dd></div>;
 }
 
-export function ProductDetails({ product, settings, demoMode }: { product: Product; settings: CatalogSettings; demoMode: boolean }) {
+export function ProductDetails({ product, settings, demoMode, checkoutEnabled }: { product: Product; settings: CatalogSettings; demoMode: boolean; checkoutEnabled: boolean }) {
   const price = product.promotionalPrice ?? product.price;
   const whatsappText = settings.whatsappMessage.replace("{produto}", product.name);
   const whatsappUrl = settings.whatsapp ? `https://wa.me/${onlyDigits(settings.whatsapp)}?text=${encodeURIComponent(whatsappText)}` : null;
@@ -21,7 +22,9 @@ export function ProductDetails({ product, settings, demoMode }: { product: Produ
         {product.promotionalPrice && <p className="text-sm text-black/45 line-through">{formatPrice(product.price)}</p>}
       </div>
       <p className="mt-7 max-w-xl text-base leading-relaxed text-black/70">{product.shortDescription}</p>
-      {whatsappUrl && <a className="button-primary mt-7 w-full sm:w-auto" href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden /> Falar sobre esta peça</a>}
+      {checkoutEnabled && <CheckoutForm productId={product.id} price={price} sizes={product.sizes} colors={product.colors} />}
+      {!checkoutEnabled && !demoMode && <p className="mt-7 border-l-2 border-[var(--accent)] pl-4 text-sm leading-relaxed text-black/65">A compra online está em configuração. Enquanto isso, fale com a Laus Sit pelo WhatsApp.</p>}
+      {whatsappUrl && <a className={`${checkoutEnabled ? "button-secondary" : "button-primary"} mt-5 w-full sm:w-auto`} href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden /> Falar sobre esta peça</a>}
 
       <div className="mt-12 space-y-10">
         <section><h2 className="eyebrow mb-4">Sobre a peça</h2><p className="max-w-xl text-sm leading-7 text-black/70">{product.description}</p></section>

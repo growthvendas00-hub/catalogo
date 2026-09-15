@@ -1,6 +1,6 @@
 # Laus Sit — catálogo digital
 
-Catálogo editorial, mobile-first, para apresentação de camisetas, modelagens e personalizações. Não possui carrinho, checkout, pagamento ou cadastro de clientes: a conversa comercial acontece diretamente pelo WhatsApp.
+Catálogo editorial, mobile-first, com painel administrativo, checkout de uma peça por vez no Mercado Pago e acompanhamento de pedidos.
 
 ## O que está pronto
 
@@ -9,6 +9,10 @@ Catálogo editorial, mobile-first, para apresentação de camisetas, modelagens 
 - ficha técnica, cores acessíveis, tamanhos, medidas, cuidados e observações;
 - botão de WhatsApp configurável;
 - painel responsivo com autenticação Supabase, CRUD, duplicação, status e ordenação;
+- Checkout Pro com preço sempre relido do Supabase antes da cobrança;
+- escolha de tamanho, cor e quantidade, com dados de contato e observações;
+- retorno de pagamento e webhook autenticado/idempotente do Mercado Pago;
+- aba administrativa de pedidos, pagamento, cliente e andamento da produção;
 - editor completo de produto e configurações da marca, inclusive upload de logo;
 - estúdio de fotos client-side com remoção de fundo, antes/depois, fundo branco/transparente, três enquadramentos, saída 4:5 e preservação do original;
 - modo demonstração automático com dez peças e imagens SVG locais;
@@ -32,7 +36,10 @@ Fluxo de dados: páginas públicas chamam `lib/catalog.ts`, que escolhe automati
 app/
   admin/                    login, produtos, imagens, configurações e ações
   api/admin/                uploads autenticados
+  api/checkout/             cria pedido e preferência do Mercado Pago
+  api/webhooks/             confirma pagamentos com a API do Mercado Pago
   produto/[slug]/           página pública compartilhável
+  pedido/[token]/           acompanhamento privado por link aleatório
 components/
   admin/                    editores e ferramentas do painel
 lib/
@@ -91,7 +98,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_ANON
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-`NEXT_PUBLIC_SITE_URL` é opcional: localmente o fallback é `http://localhost:3000` e, na Vercel, a URL do deploy é detectada automaticamente. Se você preencher a variável, use a URL completa com `https://`. Use somente a anon key. Não adicione `service_role` ao projeto web.
+`NEXT_PUBLIC_SITE_URL` é opcional para o catálogo, mas deve ser preenchida com a URL HTTPS final antes de testar o Mercado Pago. O navegador usa somente a anon/publishable key. A Secret Key moderna fica exclusivamente no servidor para registrar e sincronizar pedidos.
+
+### Ativar pedidos e Mercado Pago
+
+1. Execute também `supabase/migrations/202609150001_orders_and_payments.sql` no SQL Editor.
+2. Em **Settings → API Keys → Publishable and secret API keys**, crie uma Secret Key exclusiva para a Vercel.
+3. Na Vercel, configure:
+
+```env
+SUPABASE_SECRET_KEY=sb_secret_...
+MERCADO_PAGO_ACCESS_TOKEN=...
+MERCADO_PAGO_MODE=test
+NEXT_PUBLIC_SITE_URL=https://seu-projeto.vercel.app
+```
+
+4. Faça o deploy. O endpoint de notificações será `https://seu-projeto.vercel.app/api/webhooks/mercado-pago`.
+5. No Mercado Pago, abra a aplicação → **Webhooks → Configurar notificações**, cadastre essa URL para o evento **Pagamentos** e copie a assinatura secreta para `MERCADO_PAGO_WEBHOOK_SECRET` na Vercel.
+6. Faça novo deploy depois de adicionar ou alterar variáveis.
+
+Em teste, mantenha `MERCADO_PAGO_MODE=test` e use a conta compradora/cartões de teste do Mercado Pago. Para produção, troque o Access Token pelo produtivo e altere `MERCADO_PAGO_MODE=production` no mesmo deploy.
 
 ### Criar o primeiro administrador
 
@@ -134,9 +160,9 @@ O contrato fica em `services/background-removal/types.ts`; portanto a implementa
 1. Envie o repositório ao GitHub.
 2. Na Vercel, escolha **Add New → Project** e importe o repositório.
 3. Framework Preset: Next.js; build command: `npm run build`.
-4. Adicione as três variáveis do `.env.local` em **Settings → Environment Variables**.
+4. Adicione as variáveis públicas e secretas documentadas acima em **Settings → Environment Variables**.
 5. Troque `NEXT_PUBLIC_SITE_URL` pela URL final, por exemplo `https://catalogo.exemplo.com`.
-6. Faça o deploy e teste `/`, uma URL `/produto/...`, `/admin/login`, upload e logout.
+6. Faça o deploy e teste `/`, uma URL `/produto/...`, o checkout, o retorno `/pedido/...`, `/admin/login`, `/admin/pedidos`, upload e logout.
 
 Sem variáveis Supabase, a Vercel também publica o projeto em modo demo.
 
@@ -146,4 +172,5 @@ Sem variáveis Supabase, a Vercel também publica o projeto em modo demo.
 - substituir placeholders por fotografias reais;
 - cadastrar WhatsApp, Instagram, texto institucional e logo;
 - revisar a licença da biblioteca de recorte ou trocar o serviço;
-- configurar domínio próprio e executar um teste de upload em aparelhos móveis reais.
+- configurar domínio próprio e executar testes de compra e upload em aparelhos móveis reais;
+- fazer pelo menos um pagamento aprovado, um pendente e um recusado no ambiente de teste antes de usar credenciais produtivas.

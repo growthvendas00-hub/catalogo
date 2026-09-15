@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Images, LogOut, Package, Settings } from "lucide-react";
+import { Images, LogOut, Package, Settings, ShoppingBag } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { logoutAction } from "@/app/admin/actions";
 
 const links = [
+  { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/produtos", label: "Produtos", icon: Package },
   { href: "/admin/imagens", label: "Imagens", icon: Images },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },

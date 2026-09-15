@@ -25,7 +25,7 @@ export default async function HomePage() {
         </section>
       </main>
       <footer className="container-wide flex flex-col gap-4 px-[var(--page-gutter)] py-8 text-xs uppercase tracking-[.08em] text-black/55 sm:flex-row sm:items-center sm:justify-between">
-        <p>{settings.footerText}</p><p>Catálogo sem checkout · atendimento direto</p>
+        <p>{settings.footerText}</p><p>Atendimento direto · pagamento seguro pelo Mercado Pago</p>
       </footer>
     </>
   );

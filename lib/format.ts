@@ -18,3 +18,11 @@ export function slugify(value: string) {
 export function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
+
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
+}
