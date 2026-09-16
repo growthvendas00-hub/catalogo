@@ -5,8 +5,15 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
+// PostgreSQL accepts UUID values that do not carry the RFC version/variant bits.
+// The seeded catalog uses that valid PostgreSQL representation, so a strict
+// `z.uuid()` check would reject a product that the database accepts.
+const postgresUuid = z.string().trim().regex(
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+);
+
 const checkoutSchema = z.object({
-  productId: z.string().uuid(),
+  productId: postgresUuid,
   size: z.string().trim().max(40).optional().default(""),
   color: z.string().trim().max(80).optional().default(""),
   quantity: z.coerce.number().int().min(1).max(10),
@@ -20,7 +27,25 @@ const checkoutSchema = z.object({
 
 type ProductRelation = { name: string };
 
+function validationMessage(error: z.ZodError) {
+  const path = error.issues[0]?.path.join(".");
+  const messages: Record<string, string> = {
+    productId: "Esta peça não foi identificada. Atualize a página e tente novamente.",
+    size: "Selecione um tamanho.",
+    color: "Selecione uma cor.",
+    quantity: "Escolha uma quantidade entre 1 e 10.",
+    "customer.name": "Informe seu nome completo.",
+    "customer.email": "Informe um e-mail válido.",
+    "customer.phone": "Informe seu WhatsApp com DDD.",
+    "customer.notes": "As observações devem ter no máximo 600 caracteres.",
+  };
+
+  return messages[path ?? ""] ?? "Revise os dados destacados antes de continuar.";
+}
+
 export async function POST(request: Request) {
+  const requestId = request.headers.get("x-vercel-id") ?? crypto.randomUUID();
+
   if (!hasCheckoutEnv) {
     return Response.json({ error: "O checkout ainda está sendo configurado." }, { status: 503 });
   }
@@ -39,7 +64,16 @@ export async function POST(request: Request) {
 
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Revise seus dados antes de continuar." }, { status: 400 });
+    console.warn(JSON.stringify({
+      level: "warning",
+      message: "Checkout validation failed",
+      requestId,
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        code: issue.code,
+      })),
+    }));
+    return Response.json({ error: validationMessage(parsed.error) }, { status: 400 });
   }
 
   const input = parsed.data;
@@ -123,9 +157,23 @@ export async function POST(request: Request) {
       .eq("id", order.id);
     if (updateError) throw new Error(updateError.message);
 
+    console.info(JSON.stringify({
+      level: "info",
+      message: "Mercado Pago preference created",
+      requestId,
+      orderId: order.id,
+      preferenceId: preference.preferenceId,
+    }));
     return Response.json({ checkoutUrl: preference.checkoutUrl });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao abrir o Mercado Pago.";
+    console.error(JSON.stringify({
+      level: "error",
+      message: "Mercado Pago preference failed",
+      requestId,
+      orderId: order.id,
+      error: message,
+    }));
     await supabase
       .from("orders")
       .update({ payment_status: "checkout_error", checkout_error: message })
