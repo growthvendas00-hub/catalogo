@@ -68,6 +68,22 @@ alter table public.product_sizes enable row level security;
 alter table public.product_measurements enable row level security;
 alter table public.catalog_settings enable row level security;
 
+-- As políticas não aceitam `create policy if not exists`. Removê-las antes
+-- permite retomar com segurança uma execução parcial desta migração.
+drop policy if exists "admin reads own profile" on public.admin_profiles;
+drop policy if exists "public reads active products" on public.products;
+drop policy if exists "admins manage products" on public.products;
+drop policy if exists "public reads images of active products" on public.product_images;
+drop policy if exists "admins manage product images" on public.product_images;
+drop policy if exists "public reads colors of active products" on public.product_colors;
+drop policy if exists "admins manage product colors" on public.product_colors;
+drop policy if exists "public reads sizes of active products" on public.product_sizes;
+drop policy if exists "admins manage product sizes" on public.product_sizes;
+drop policy if exists "public reads measurements of active products" on public.product_measurements;
+drop policy if exists "admins manage product measurements" on public.product_measurements;
+drop policy if exists "public reads catalog settings" on public.catalog_settings;
+drop policy if exists "admins manage catalog settings" on public.catalog_settings;
+
 create policy "admin reads own profile" on public.admin_profiles for select to authenticated using (user_id = auth.uid());
 create policy "public reads active products" on public.products for select to anon, authenticated using (active or public.is_admin());
 create policy "admins manage products" on public.products for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -86,6 +102,10 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
   ('product-images', 'product-images', true, 12582912, array['image/jpeg','image/png','image/webp']),
   ('brand-assets', 'brand-assets', true, 5242880, array['image/jpeg','image/png','image/webp','image/svg+xml'])
 on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+drop policy if exists "public reads catalog assets" on storage.objects;
+drop policy if exists "admins upload catalog assets" on storage.objects;
+drop policy if exists "admins update catalog assets" on storage.objects;
+drop policy if exists "admins delete catalog assets" on storage.objects;
 create policy "public reads catalog assets" on storage.objects for select to anon, authenticated using (bucket_id in ('product-images','brand-assets'));
 create policy "admins upload catalog assets" on storage.objects for insert to authenticated with check (bucket_id in ('product-images','brand-assets') and public.is_admin());
 create policy "admins update catalog assets" on storage.objects for update to authenticated using (bucket_id in ('product-images','brand-assets') and public.is_admin()) with check (bucket_id in ('product-images','brand-assets') and public.is_admin());

@@ -11,6 +11,10 @@ No projeto correto, abra **SQL Editor → New query** e execute, nesta ordem:
 
 O primeiro arquivo cria catálogo, autenticação administrativa, Storage, políticas RLS e produtos iniciais. O segundo cria pedidos, estados de pagamento, acompanhamento da produção, índices e permissões.
 
+Se a execução do primeiro arquivo tiver sido interrompida, execute novamente o
+arquivo inteiro. A migração remove e recria apenas triggers e políticas com os
+mesmos nomes; tabelas, usuários e produtos existentes são preservados.
+
 ## 2. Criar o acesso administrativo
 
 1. Abra **Authentication → Users → Add user**.
@@ -83,4 +87,3 @@ Somente depois dos cenários aprovado, pendente e recusado passarem:
 2. altere `MERCADO_PAGO_MODE` para `production`;
 3. configure também a URL produtiva na área de Webhooks;
 4. faça um último redeploy.
-
