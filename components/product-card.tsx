@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import type { Product } from "@/types/catalog";
+import type { PublicProductCard } from "@/types/catalog";
 
-export function ProductCard({ product, index }: { product: Product; index: number }) {
+export function ProductCard({ product, index }: { product: PublicProductCard; index: number }) {
   const finalPrice = product.promotionalPrice ?? product.price;
   return (
     <article className="catalog-cell group">
@@ -14,16 +14,16 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
             alt={product.mainImageAlt}
             fill
             sizes="(max-width: 759px) 50vw, (max-width: 1179px) 33vw, 25vw"
-            className="product-image object-cover"
+            className="product-image object-contain p-3 sm:p-5"
             priority={index < 4}
           />
-          <span className="absolute left-2 top-2 text-[.6rem] font-bold tracking-[.12em] text-black/55 sm:left-3 sm:top-3">{String(product.sortOrder).padStart(2, "0")}</span>
+          <span className="absolute left-2 top-2 text-[.6rem] font-bold tracking-[.12em] text-[var(--muted)] sm:left-3 sm:top-3">{String(product.sortOrder).padStart(2, "0")}</span>
         </div>
         <div className="min-h-[6.8rem] border-t fine-rule p-3 sm:min-h-32 sm:p-5">
-          <p className="mb-2 text-[.58rem] font-bold tracking-[.13em] text-black/55 uppercase sm:text-[.65rem]">{product.category}</p>
+          <p className="mb-2 text-[.58rem] font-bold tracking-[.13em] text-[var(--muted)] uppercase sm:text-[.65rem]">{product.category}</p>
           <h2 className="max-w-[22ch] text-[.78rem] font-semibold leading-[1.25] tracking-[.035em] uppercase sm:text-sm">{product.name}</h2>
           <div className="mt-3 flex flex-wrap items-baseline gap-x-2 text-xs sm:text-sm">
-            {product.promotionalPrice && <span className="text-[.65rem] text-black/45 line-through sm:text-xs">{formatPrice(product.price)}</span>}
+            {product.promotionalPrice && <span className="text-[.65rem] text-[var(--muted)] line-through sm:text-xs">{formatPrice(product.price)}</span>}
             <span className="font-semibold tabular-nums">{formatPrice(finalPrice)}</span>
           </div>
         </div>

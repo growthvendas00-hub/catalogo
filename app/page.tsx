@@ -1,9 +1,9 @@
 import { CatalogExplorer } from "@/components/catalog-explorer";
 import { SiteHeader } from "@/components/site-header";
-import { getCatalogSettings, getPublicProducts } from "@/lib/catalog";
+import { getCatalogSettings, getPublicProductCards } from "@/lib/catalog";
 
 export default async function HomePage() {
-  const [products, settings] = await Promise.all([getPublicProducts(), getCatalogSettings()]);
+  const [products, settings] = await Promise.all([getPublicProductCards(), getCatalogSettings()]);
   return (
     <>
       <SiteHeader settings={settings} />
@@ -15,18 +15,19 @@ export default async function HomePage() {
           </div>
           <div className="mt-8 max-w-md self-end border-l border-black pl-4 sm:mt-0">
             <p className="text-base leading-relaxed sm:text-lg">{settings.subtitle}</p>
-            <p className="mt-3 text-sm leading-relaxed text-black/55">Produção independente · peças lisas e personalizadas.</p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">Produção independente · peças lisas e personalizadas.</p>
           </div>
         </section>
-        <CatalogExplorer products={products} />
+        <Suspense fallback={<div className="min-h-80 border-y fine-rule" aria-hidden />}><CatalogExplorer products={products} /></Suspense>
         <section id="sobre" className="grid border-b fine-rule md:grid-cols-2">
           <div className="min-h-64 border-b fine-rule p-[var(--page-gutter)] md:border-b-0 md:border-r"><p className="eyebrow">Sobre a Laus Sit</p></div>
           <div className="flex min-h-64 items-end p-[var(--page-gutter)]"><p className="max-w-xl text-2xl leading-tight tracking-[-.025em] sm:text-4xl">{settings.institutionalText}</p></div>
         </section>
       </main>
-      <footer className="container-wide flex flex-col gap-4 px-[var(--page-gutter)] py-8 text-xs uppercase tracking-[.08em] text-black/55 sm:flex-row sm:items-center sm:justify-between">
-        <p>{settings.footerText}</p><p>Atendimento direto · pagamento seguro pelo Mercado Pago</p>
+      <footer className="container-wide flex flex-col gap-4 px-[var(--page-gutter)] py-8 text-xs uppercase tracking-[.08em] text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
+        <p>{settings.footerText}</p><div className="flex flex-wrap gap-x-5 gap-y-2"><p>Atendimento direto · pagamento seguro pelo Mercado Pago</p>{settings.instagram && <a className="underline underline-offset-4" href={`https://instagram.com/${settings.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}`} target="_blank" rel="noreferrer">Instagram de {settings.brandName}</a>}</div>
       </footer>
     </>
   );
 }
+import { Suspense } from "react";

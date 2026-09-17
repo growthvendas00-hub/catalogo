@@ -30,6 +30,9 @@ const productSchema = z.object({
   colors: z.array(z.object({ name: z.string().min(1), hex: z.string().nullable().optional() })),
   measurements: z.array(z.object({ size: z.string().min(1), width: z.coerce.number().nonnegative(), length: z.coerce.number().nonnegative(), extra: z.record(z.string(), z.union([z.string(), z.number()])).optional() })),
   images: z.array(z.object({ url: z.string().min(1), alt: z.string(), sortOrder: z.number().optional() })),
+}).superRefine((value, context) => {
+  if (value.active && value.price < 0.5) context.addIssue({ code: "custom", path: ["price"], message: "Produto ativo precisa custar ao menos R$ 0,50." });
+  if (value.active && value.promotionalPrice !== "" && Number(value.promotionalPrice) < 0.5) context.addIssue({ code: "custom", path: ["promotionalPrice"], message: "Promoção ativa precisa custar ao menos R$ 0,50." });
 });
 
 function jsonField<T>(formData: FormData, name: string, fallback: T): T {
@@ -82,34 +85,8 @@ export async function saveProductAction(_state: ActionState, formData: FormData)
 
   const data = parsed.data;
   const supabase = await createSupabaseServerClient();
-  const row = {
-    name: data.name, slug: data.slug, category: data.category, price: data.price,
-    promotional_price: data.promotionalPrice === "" ? null : data.promotionalPrice,
-    short_description: data.shortDescription, description: data.description,
-    active: data.active, sort_order: data.sortOrder, main_image_url: data.mainImageUrl,
-    main_image_alt: data.mainImageAlt, fabric: data.fabric, composition: data.composition,
-    thread_type: data.threadType, gsm: data.gsm, fit: data.fit, printing_method: data.printingMethod,
-    finish: data.finish, technical_notes: data.technicalNotes, care_instructions: data.careInstructions,
-    observations: data.observations,
-  };
-  const result = data.id
-    ? await supabase.from("products").update(row).eq("id", data.id).select("id").single()
-    : await supabase.from("products").insert(row).select("id").single();
-  if (result.error) return { ok: false, message: `Não foi possível salvar: ${result.error.message}` };
-  const productId = result.data.id;
-  for (const table of ["product_images", "product_colors", "product_sizes", "product_measurements"]) {
-    const { error } = await supabase.from(table).delete().eq("product_id", productId);
-    if (error) return { ok: false, message: `Produto salvo, mas houve um erro ao atualizar detalhes: ${error.message}` };
-  }
-  const operations = [
-    data.images.length ? supabase.from("product_images").insert(data.images.map((item, index) => ({ product_id: productId, image_url: item.url, alt_text: item.alt, sort_order: index }))) : null,
-    data.colors.length ? supabase.from("product_colors").insert(data.colors.map((item, index) => ({ product_id: productId, name: item.name, hex: item.hex || null, sort_order: index }))) : null,
-    data.sizes.length ? supabase.from("product_sizes").insert(data.sizes.map((name, index) => ({ product_id: productId, name, sort_order: index }))) : null,
-    data.measurements.length ? supabase.from("product_measurements").insert(data.measurements.map((item, index) => ({ product_id: productId, size: item.size, width: item.width, length: item.length, extra: item.extra ?? {}, sort_order: index }))) : null,
-  ].filter(Boolean);
-  const relations = await Promise.all(operations);
-  const relationError = relations.find((operation) => operation?.error)?.error;
-  if (relationError) return { ok: false, message: `Produto salvo, mas houve um erro nos detalhes: ${relationError.message}` };
+  const { error } = await supabase.rpc("save_product_with_relations", { p_product: data });
+  if (error) return { ok: false, message: `Não foi possível salvar o produto e seus detalhes: ${error.message}` };
   revalidatePath("/"); revalidatePath("/admin/produtos"); revalidatePath(`/produto/${data.slug}`);
   return { ok: true, message: "Produto salvo." };
 }
@@ -119,7 +96,8 @@ export async function deleteProductAction(id: string): Promise<ActionState> {
   if (!hasSupabaseEnv) return { ok: true, message: "Exclusão simulada. O catálogo demo permanece intacto." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) return { ok: false, message: error.message };
+  if (error?.code === "23503") return { ok: false, message: "Esta peça já possui pedidos. Desative-a para preservar o histórico." };
+  if (error) return { ok: false, message: "Não foi possível excluir a peça." };
   revalidatePath("/"); revalidatePath("/admin/produtos");
   return { ok: true, message: "Peça excluída." };
 }
@@ -138,13 +116,8 @@ export async function duplicateProductAction(id: string): Promise<ActionState> {
   await requireAdmin();
   if (!hasSupabaseEnv) return { ok: true, message: "Duplicação simulada no modo demo." };
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
-  if (error) return { ok: false, message: error.message };
-  const { id: _id, created_at: _created, updated_at: _updated, ...copy } = data;
-  void _id; void _created; void _updated;
-  const suffix = Date.now().toString().slice(-6);
-  const { error: insertError } = await supabase.from("products").insert({ ...copy, name: `${data.name} — cópia`, slug: `${data.slug}-copia-${suffix}`, active: false, sort_order: Number(data.sort_order) + 1 });
-  if (insertError) return { ok: false, message: insertError.message };
+  const { error } = await supabase.rpc("duplicate_product_with_relations", { p_source_id: id });
+  if (error) return { ok: false, message: `Não foi possível duplicar a peça completa: ${error.message}` };
   revalidatePath("/admin/produtos");
   return { ok: true, message: "Peça duplicada como inativa." };
 }

@@ -16,7 +16,7 @@ const emptyProduct: Product = {
 };
 
 function FieldError({ errors }: { errors?: string[] }) { return errors?.length ? <span className="normal-case tracking-normal text-[var(--danger)]">{errors[0]}</span> : null; }
-function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) { return <section className="border-t fine-rule py-8"><div className="mb-6 grid gap-2 sm:grid-cols-[13rem_1fr]"><h2 className="eyebrow">{title}</h2>{note && <p className="max-w-xl text-xs leading-relaxed text-black/50">{note}</p>}</div>{children}</section>; }
+function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) { return <section className="border-t fine-rule py-8"><div className="mb-6 grid gap-2 sm:grid-cols-[13rem_1fr]"><h2 className="eyebrow">{title}</h2>{note && <p className="max-w-xl text-xs leading-relaxed text-[var(--muted)]">{note}</p>}</div>{children}</section>; }
 
 export function ProductEditor({ product: initialProduct }: { product?: Product }) {
   const product = initialProduct ?? emptyProduct;
@@ -45,8 +45,8 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
         <label className="admin-label sm:col-span-2">Nome<FieldError errors={state.fieldErrors?.name} /><input className="admin-input" name="name" value={name} onChange={(event) => changeName(event.target.value)} required /></label>
         <label className="admin-label">Slug<FieldError errors={state.fieldErrors?.slug} /><input className="admin-input" name="slug" value={slug} onChange={(event) => { setSlugTouched(true); setSlug(slugify(event.target.value)); }} required /></label>
         <label className="admin-label">Categoria<select className="admin-input" name="category" defaultValue={product.category}><option>Baby Look</option><option>Tradicional</option><option>Oversized</option></select></label>
-        <label className="admin-label">Preço (R$)<FieldError errors={state.fieldErrors?.price} /><input className="admin-input" name="price" type="number" min="0" step="0.01" defaultValue={product.price} required /></label>
-        <label className="admin-label">Preço promocional (R$)<input className="admin-input" name="promotionalPrice" type="number" min="0" step="0.01" defaultValue={product.promotionalPrice ?? ""} /></label>
+        <label className="admin-label">Preço (R$)<FieldError errors={state.fieldErrors?.price} /><input className="admin-input" name="price" type="number" min="0.50" step="0.01" defaultValue={product.price} required /></label>
+        <label className="admin-label">Preço promocional (R$)<FieldError errors={state.fieldErrors?.promotionalPrice} /><input className="admin-input" name="promotionalPrice" type="number" min="0.50" step="0.01" defaultValue={product.promotionalPrice ?? ""} /></label>
         <label className="admin-label sm:col-span-2">Descrição curta<FieldError errors={state.fieldErrors?.shortDescription} /><textarea className="admin-input min-h-24 normal-case tracking-normal" name="shortDescription" defaultValue={product.shortDescription} required /></label>
         <label className="admin-label sm:col-span-2">Descrição completa<FieldError errors={state.fieldErrors?.description} /><textarea className="admin-input min-h-36 normal-case tracking-normal" name="description" defaultValue={product.description} required /></label>
         <label className="admin-label">Posição no catálogo<input className="admin-input" name="sortOrder" type="number" min="0" defaultValue={product.sortOrder} /></label>

@@ -3,11 +3,11 @@ import { cache } from "react";
 import { demoProducts, demoSettings } from "@/lib/demo-data";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { CatalogSettings, Category, Product } from "@/types/catalog";
+import type { CatalogSettings, Category, Product, PublicProductCard } from "@/types/catalog";
 
 type DbRow = Record<string, unknown>;
 
-function mapProduct(row: DbRow): Product {
+export function mapPublicProduct(row: DbRow): Product {
   const images = (row.product_images as DbRow[] | null) ?? [];
   const colors = (row.product_colors as DbRow[] | null) ?? [];
   const sizes = (row.product_sizes as DbRow[] | null) ?? [];
@@ -36,8 +36,6 @@ function mapProduct(row: DbRow): Product {
     sortOrder: Number(row.sort_order ?? 0),
     mainImageUrl: String(row.processed_image_url ?? row.main_image_url ?? "/demo-products/product-01.svg"),
     mainImageAlt: String(row.main_image_alt ?? row.name),
-    originalImageUrl: row.original_image_url ? String(row.original_image_url) : null,
-    processedImageUrl: row.processed_image_url ? String(row.processed_image_url) : null,
     images: images
       .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
       .map((item) => ({ id: String(item.id), url: String(item.image_url), alt: String(item.alt_text ?? row.name), sortOrder: Number(item.sort_order) })),
@@ -53,14 +51,41 @@ function mapProduct(row: DbRow): Product {
   };
 }
 
-const productSelect = "*, product_images(*), product_colors(*), product_sizes(*), product_measurements(*)";
+const productSelect = [
+  "id", "name", "slug", "category", "price", "promotional_price",
+  "short_description", "description", "fabric", "composition", "thread_type",
+  "gsm", "fit", "printing_method", "finish", "technical_notes",
+  "care_instructions", "observations", "active", "sort_order", "main_image_url",
+  "main_image_alt", "processed_image_url",
+  "product_images(id,image_url,alt_text,sort_order)",
+  "product_colors(id,name,hex,sort_order)",
+  "product_sizes(id,name,sort_order)",
+  "product_measurements(id,size,width,length,extra,sort_order)",
+].join(",");
+const productCardSelect = "id,name,slug,category,price,promotional_price,sort_order,main_image_url,main_image_alt,processed_image_url";
+
+const settingsSelect = "brand_name,subtitle,institutional_text,logo_url,whatsapp,instagram,whatsapp_message,footer_text,show_colors,show_measurements,show_technical_sheet";
 
 export const getPublicProducts = cache(async (): Promise<Product[]> => {
   if (!hasSupabaseEnv) return demoProducts;
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("active", true).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar o catálogo: ${error.message}`);
-  return (data ?? []).map((row) => mapProduct(row as DbRow));
+  return (data ?? []).map((row) => mapPublicProduct(row as unknown as DbRow));
+});
+
+export const getPublicProductCards = cache(async (): Promise<PublicProductCard[]> => {
+  if (!hasSupabaseEnv) return demoProducts.map(({ id, name, slug, category, price, promotionalPrice, sortOrder, mainImageUrl, mainImageAlt }) => ({ id, name, slug, category, price, promotionalPrice, sortOrder, mainImageUrl, mainImageAlt }));
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.from("products").select(productCardSelect).eq("active", true).order("sort_order");
+  if (error) throw new Error(`Não foi possível carregar o catálogo: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: String(row.id), name: String(row.name), slug: String(row.slug), category: row.category as Category,
+    price: Number(row.price), promotionalPrice: row.promotional_price == null ? null : Number(row.promotional_price),
+    sortOrder: Number(row.sort_order ?? 0),
+    mainImageUrl: String(row.processed_image_url ?? row.main_image_url ?? "/demo-products/product-01.svg"),
+    mainImageAlt: String(row.main_image_alt ?? row.name),
+  }));
 });
 
 export const getAllProducts = cache(async (): Promise<Product[]> => {
@@ -68,7 +93,7 @@ export const getAllProducts = cache(async (): Promise<Product[]> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar os produtos: ${error.message}`);
-  return (data ?? []).map((row) => mapProduct(row as DbRow));
+  return (data ?? []).map((row) => mapPublicProduct(row as unknown as DbRow));
 });
 
 export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
@@ -76,7 +101,7 @@ export const getProductBySlug = cache(async (slug: string): Promise<Product | nu
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("slug", slug).eq("active", true).maybeSingle();
   if (error) throw new Error(`Não foi possível carregar a peça: ${error.message}`);
-  return data ? mapProduct(data as DbRow) : null;
+  return data ? mapPublicProduct(data as unknown as DbRow) : null;
 });
 
 export const getProductById = cache(async (id: string): Promise<Product | null> => {
@@ -84,13 +109,13 @@ export const getProductById = cache(async (id: string): Promise<Product | null> 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("id", id).maybeSingle();
   if (error) throw new Error(`Não foi possível carregar a peça: ${error.message}`);
-  return data ? mapProduct(data as DbRow) : null;
+  return data ? mapPublicProduct(data as unknown as DbRow) : null;
 });
 
 export const getCatalogSettings = cache(async (): Promise<CatalogSettings> => {
   if (!hasSupabaseEnv) return demoSettings;
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from("catalog_settings").select("*").eq("id", 1).maybeSingle();
+  const { data, error } = await supabase.from("catalog_settings").select(settingsSelect).eq("id", 1).maybeSingle();
   if (error || !data) return demoSettings;
   return {
     brandName: data.brand_name,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CreditCard, LoaderCircle, ShieldCheck } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import type { ProductColor } from "@/types/catalog";
@@ -21,6 +21,7 @@ export function CheckoutForm({
   const [quantity, setQuantity] = useState(1);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const checkoutAttemptId = useRef<string | null>(null);
   const total = price * quantity;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -28,12 +29,14 @@ export function CheckoutForm({
     setPending(true);
     setMessage("");
     const formData = new FormData(event.currentTarget);
+    checkoutAttemptId.current ??= crypto.randomUUID();
 
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          checkoutAttemptId: checkoutAttemptId.current,
           productId,
           size: String(formData.get("size") ?? ""),
           color: String(formData.get("color") ?? ""),
@@ -63,7 +66,7 @@ export function CheckoutForm({
     <section className="mt-8 border-y fine-rule bg-[var(--paper-bright)] px-4 py-6 sm:px-5" aria-labelledby="checkout-title">
       <div className="flex items-start justify-between gap-5">
         <div>
-          <p className="eyebrow text-black/45">Compra segura</p>
+          <p className="eyebrow text-[var(--muted)]">Compra segura</p>
           <h2 id="checkout-title" className="mt-2 text-xl font-medium tracking-[-.025em]">Escolha sua peça</h2>
         </div>
         <ShieldCheck className="shrink-0 text-[var(--success)]" size={24} aria-hidden />
@@ -100,18 +103,18 @@ export function CheckoutForm({
             <input className="admin-input normal-case tracking-normal" name="phone" type="tel" inputMode="tel" autoComplete="tel" minLength={8} maxLength={30} placeholder="(11) 99999-9999" required />
           </label>
         </div>
-        <label className="admin-label">Observações para a costureira <span className="normal-case tracking-normal text-black/40">(opcional)</span>
+        <label className="admin-label">Observações para a costureira <span className="normal-case tracking-normal text-[var(--muted)]">(opcional)</span>
           <textarea className="admin-input min-h-20 normal-case tracking-normal" name="notes" maxLength={600} placeholder="Personalização, prazo ou outra informação importante" />
         </label>
 
         <div className="flex flex-col gap-3 border-t fine-rule pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div><span className="eyebrow text-black/45">Total</span><p className="mt-1 text-xl font-semibold tabular-nums">{formatPrice(total)}</p></div>
+          <div><span className="eyebrow text-[var(--muted)]">Total</span><p className="mt-1 text-xl font-semibold tabular-nums">{formatPrice(total)}</p></div>
           <button className="button-primary w-full sm:w-auto" disabled={pending} type="submit">
             {pending ? <LoaderCircle className="animate-spin" size={16} /> : <CreditCard size={16} />}
             {pending ? "Abrindo pagamento..." : "Pagar com Mercado Pago"}
           </button>
         </div>
-        <p className="text-xs leading-relaxed text-black/50">Você será direcionado ao ambiente seguro do Mercado Pago. O preço é confirmado novamente pelo servidor antes da cobrança.</p>
+        <p className="text-xs leading-relaxed text-[var(--muted)]">Você será direcionado ao ambiente seguro do Mercado Pago. O preço é confirmado novamente pelo servidor antes da cobrança.</p>
         {message && <p role="alert" className="border-l-2 border-[var(--danger)] pl-3 text-sm text-[var(--danger)]">{message}</p>}
       </form>
     </section>

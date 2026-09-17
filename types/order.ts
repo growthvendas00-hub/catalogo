@@ -43,3 +43,21 @@ export type Order = {
   updatedAt: string;
 };
 
+export type PublicOrder = Pick<
+  Order,
+  | "publicToken"
+  | "productName"
+  | "productSlug"
+  | "productImageUrl"
+  | "selectedSize"
+  | "selectedColor"
+  | "quantity"
+  | "unitPrice"
+  | "totalAmount"
+  | "paymentStatus"
+  | "paymentStatusDetail"
+  | "fulfillmentStatus"
+  | "paidAt"
+  | "createdAt"
+  | "updatedAt"
+>;

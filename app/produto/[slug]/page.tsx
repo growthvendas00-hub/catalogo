@@ -10,12 +10,13 @@ import { hasCheckoutEnv, isDemoMode } from "@/lib/env";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, settings] = await Promise.all([getProductBySlug(slug), getCatalogSettings()]);
   if (!product) return { title: "Peça não encontrada" };
   return {
     title: product.name,
     description: product.shortDescription,
-    openGraph: { title: `${product.name} | Laus Sit`, description: product.shortDescription, images: [{ url: product.mainImageUrl, alt: product.mainImageAlt }] },
+    alternates: { canonical: `/produto/${product.slug}` },
+    openGraph: { title: `${product.name} | ${settings.brandName}`, description: product.shortDescription, siteName: settings.brandName, images: [{ url: product.mainImageUrl, alt: `${product.mainImageAlt} — ${settings.brandName}` }] },
   };
 }
 

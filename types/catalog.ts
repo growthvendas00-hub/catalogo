@@ -46,13 +46,16 @@ export type Product = {
   sortOrder: number;
   mainImageUrl: string;
   mainImageAlt: string;
-  originalImageUrl?: string | null;
-  processedImageUrl?: string | null;
   images: ProductImage[];
   colors: ProductColor[];
   sizes: string[];
   measurements: ProductMeasurement[];
 };
+
+export type PublicProductCard = Pick<
+  Product,
+  "id" | "name" | "slug" | "category" | "price" | "promotionalPrice" | "sortOrder" | "mainImageUrl" | "mainImageAlt"
+>;
 
 export type CatalogSettings = {
   brandName: string;

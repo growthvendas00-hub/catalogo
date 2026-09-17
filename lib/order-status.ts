@@ -27,3 +27,15 @@ export function paymentLabel(status: string) {
   return paymentStatusLabels[status] ?? status;
 }
 
+export type PaymentVisualState = "success" | "waiting" | "failure" | "reversal";
+
+export function paymentVisualState(status: string): PaymentVisualState {
+  if (status === "approved") return "success";
+  if (["refunded", "charged_back"].includes(status)) return "reversal";
+  if (["rejected", "cancelled", "checkout_error", "amount_mismatch"].includes(status)) return "failure";
+  return "waiting";
+}
+
+export function isTerminalPaymentStatus(status: string) {
+  return ["approved", "rejected", "cancelled", "checkout_error", "amount_mismatch", "refunded", "charged_back"].includes(status);
+}

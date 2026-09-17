@@ -9,6 +9,9 @@ type WebhookBody = {
 };
 
 export async function POST(request: Request) {
+  const requestId = request.headers.get("x-request-id") ?? request.headers.get("x-vercel-id") ?? crypto.randomUUID();
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (declaredLength > 32 * 1024) return Response.json({ error: "Notificação inválida." }, { status: 413 });
   const url = new URL(request.url);
   let body: WebhookBody = {};
   try {
@@ -31,14 +34,17 @@ export async function POST(request: Request) {
     xRequestId: request.headers.get("x-request-id"),
     dataId,
   });
-  if (!validSignature) return Response.json({ error: "Assinatura inválida." }, { status: 401 });
+  if (!validSignature) {
+    console.warn(JSON.stringify({ level: "warning", action: "payment.webhook", requestId, paymentId: dataId, status: "unauthorized", errorCategory: "signature" }));
+    return Response.json({ error: "Assinatura inválida." }, { status: 401 });
+  }
 
   try {
     const result = await syncMercadoPagoPayment(dataId);
+    console.info(JSON.stringify({ level: "info", action: "payment.webhook", requestId, orderId: result.orderId, paymentId: result.paymentId, status: result.paymentStatus }));
     return Response.json({ received: true, status: result.paymentStatus });
-  } catch (error) {
-    console.error("mercado-pago-webhook", error);
+  } catch {
+    console.error(JSON.stringify({ level: "error", action: "payment.webhook", requestId, paymentId: dataId, status: "failed", errorCategory: "sync" }));
     return Response.json({ error: "Não foi possível sincronizar o pagamento." }, { status: 500 });
   }
 }
-

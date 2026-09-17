@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { reconcileMercadoPagoOrder } from "@/lib/mercado-pago";
 import type { ActionState } from "@/app/admin/actions";
 
 const fulfillmentSchema = z.object({
@@ -36,3 +37,18 @@ export async function updateOrderAction(_state: ActionState, formData: FormData)
   return { ok: true, message: "Pedido atualizado." };
 }
 
+export async function reconcilePaymentAction(_state: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = z.string().uuid().safeParse(formData.get("id"));
+  if (!parsed.success) return { ok: false, message: "Pedido inválido." };
+  try {
+    const result = await reconcileMercadoPagoOrder(parsed.data);
+    console.info(JSON.stringify({ level: "info", action: "payment.reconcile", orderId: result.orderId, paymentId: result.paymentId, status: result.paymentStatus }));
+    revalidatePath("/admin/pedidos");
+    revalidatePath(`/admin/pedidos/${parsed.data}`);
+    return { ok: true, message: `Pagamento reconciliado: ${result.paymentStatus}.` };
+  } catch {
+    console.error(JSON.stringify({ level: "error", action: "payment.reconcile", orderId: parsed.data, status: "failed", errorCategory: "provider" }));
+    return { ok: false, message: "Não foi possível reconciliar. Confira se o pagamento já existe no Mercado Pago." };
+  }
+}
