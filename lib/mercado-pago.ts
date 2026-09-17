@@ -108,10 +108,9 @@ export async function createMercadoPagoPreference(input: CreatePreferenceInput) 
     throw new Error(data.message || data.error || `Mercado Pago respondeu ${response.status}.`);
   }
 
-  const testMode = process.env.MERCADO_PAGO_MODE !== "production";
-  const checkoutUrl = testMode
-    ? data.sandbox_init_point || data.init_point
-    : data.init_point;
+  // Checkout Pro test purchases must also use the production init_point.
+  // The legacy sandbox URL can enter a redirect loop after a test-buyer login.
+  const checkoutUrl = data.init_point;
   if (!checkoutUrl) throw new Error("O Mercado Pago não retornou a URL do checkout.");
 
   return { preferenceId: data.id, checkoutUrl };
@@ -184,4 +183,3 @@ export async function syncMercadoPagoPayment(paymentId: string) {
 
   return { orderId: String(order.id), paymentStatus };
 }
-

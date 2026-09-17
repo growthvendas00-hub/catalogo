@@ -109,7 +109,6 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```env
 SUPABASE_SECRET_KEY=sb_secret_...
 MERCADO_PAGO_ACCESS_TOKEN=...
-MERCADO_PAGO_MODE=test
 NEXT_PUBLIC_SITE_URL=https://seu-projeto.vercel.app
 ```
 
@@ -117,7 +116,7 @@ NEXT_PUBLIC_SITE_URL=https://seu-projeto.vercel.app
 5. No Mercado Pago, abra a aplicação → **Webhooks → Configurar notificações**, cadastre essa URL para o evento **Pagamentos** e copie a assinatura secreta para `MERCADO_PAGO_WEBHOOK_SECRET` na Vercel.
 6. Faça novo deploy depois de adicionar ou alterar variáveis.
 
-Em teste, mantenha `MERCADO_PAGO_MODE=test` e use a conta compradora/cartões de teste do Mercado Pago. Para produção, troque o Access Token pelo produtivo e altere `MERCADO_PAGO_MODE=production` no mesmo deploy.
+Em teste, use a credencial indicada pelo Mercado Pago para o vendedor de teste e faça a compra com a conta compradora/cartões de teste. O checkout usa o `init_point` oficial retornado pela API. Para produção, troque o Access Token pelo produtivo da conta real no mesmo deploy.
 
 ### Criar o primeiro administrador
 

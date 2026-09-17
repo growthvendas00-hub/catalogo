@@ -38,7 +38,6 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SECRET_KEY
 MERCADO_PAGO_ACCESS_TOKEN
-MERCADO_PAGO_MODE=test
 NEXT_PUBLIC_SITE_URL=https://SEU-ENDERECO.vercel.app
 ```
 
@@ -83,7 +82,6 @@ O valor da cobrança não vem do navegador: o servidor relê o produto no Supaba
 
 Somente depois dos cenários aprovado, pendente e recusado passarem:
 
-1. troque `MERCADO_PAGO_ACCESS_TOKEN` pela credencial produtiva;
-2. altere `MERCADO_PAGO_MODE` para `production`;
-3. configure também a URL produtiva na área de Webhooks;
-4. faça um último redeploy.
+1. substitua o Access Token de teste pelo Access Token de produção da conta real;
+2. configure também a URL produtiva na área de Webhooks;
+3. faça um último redeploy.
