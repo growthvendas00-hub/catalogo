@@ -100,3 +100,14 @@ Validação após implementação:
 - `npm test`: **passou**, 6 arquivos e 26 testes.
 - `npm run test:e2e`: **passou**, 1 smoke test local em Edge headless.
 - `git diff --check`: sem erro de whitespace; somente avisos esperados de normalização LF/CRLF no Windows.
+
+## 24/09/2026 — linhas religiosas, modelagens e documentos legais
+
+- As categorias públicas passaram a ser `Cristianismo`, `Matriz africana` e `Ocultismo e misticismo`, com Cristianismo selecionado inicialmente.
+- `Tradicional`, `Baby Look` e `Oversized` passaram a ser modelagens de cada produto, cada uma com ativação, preço e preço promocional próprios no admin.
+- A vitrine agora exibe o menor preço ativo como “A partir de”, e o detalhe recalcula o total conforme a modelagem escolhida.
+- O checkout valida a modelagem e busca seu preço no banco antes de criar a preferência do Mercado Pago; o cliente não controla o valor cobrado.
+- Pedidos e comprovantes passaram a registrar e exibir a modelagem selecionada.
+- Foram adicionadas páginas de Privacidade, Termos de Uso, Trocas e Devoluções e Entrega, além de campos empresariais configuráveis no admin.
+- A migration `20260920210000_catalog_taxonomy_variants_legal_settings.sql` cria `product_variants`, migra os produtos atuais e atualiza as funções transacionais. Ela foi apenas preparada localmente e não foi executada no Supabase remoto.
+- Validação final: typecheck e lint passaram; 7 arquivos/33 testes Vitest passaram; build de produção passou com 21 páginas; 2 fluxos Playwright passaram em desktop e mobile.

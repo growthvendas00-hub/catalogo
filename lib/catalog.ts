@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { demoProducts, demoSettings } from "@/lib/demo-data";
 import { hasSupabaseEnv } from "@/lib/env";
+import { getStartingPrice } from "@/lib/product-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CatalogSettings, Category, Product, PublicProductCard } from "@/types/catalog";
 
@@ -10,6 +11,7 @@ type DbRow = Record<string, unknown>;
 export function mapPublicProduct(row: DbRow): Product {
   const images = (row.product_images as DbRow[] | null) ?? [];
   const colors = (row.product_colors as DbRow[] | null) ?? [];
+  const variants = (row.product_variants as DbRow[] | null) ?? [];
   const sizes = (row.product_sizes as DbRow[] | null) ?? [];
   const measurements = (row.product_measurements as DbRow[] | null) ?? [];
 
@@ -39,6 +41,13 @@ export function mapPublicProduct(row: DbRow): Product {
     images: images
       .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
       .map((item) => ({ id: String(item.id), url: String(item.image_url), alt: String(item.alt_text ?? row.name), sortOrder: Number(item.sort_order) })),
+    variants: variants
+      .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
+      .map((item) => ({
+        id: String(item.id), model: String(item.model) as Product["variants"][number]["model"],
+        price: Number(item.price), promotionalPrice: item.promotional_price == null ? null : Number(item.promotional_price),
+        active: Boolean(item.active), sortOrder: Number(item.sort_order),
+      })),
     colors: colors
       .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
       .map((item) => ({ id: String(item.id), name: String(item.name), hex: item.hex ? String(item.hex) : null, sortOrder: Number(item.sort_order) })),
@@ -58,13 +67,14 @@ const productSelect = [
   "care_instructions", "observations", "active", "sort_order", "main_image_url",
   "main_image_alt", "processed_image_url",
   "product_images(id,image_url,alt_text,sort_order)",
+  "product_variants(id,model,price,promotional_price,active,sort_order)",
   "product_colors(id,name,hex,sort_order)",
   "product_sizes(id,name,sort_order)",
   "product_measurements(id,size,width,length,extra,sort_order)",
 ].join(",");
-const productCardSelect = "id,name,slug,category,price,promotional_price,sort_order,main_image_url,main_image_alt,processed_image_url";
+const productCardSelect = "id,name,slug,category,price,sort_order,main_image_url,main_image_alt,processed_image_url,product_variants(id,model,price,promotional_price,active,sort_order)";
 
-const settingsSelect = "brand_name,subtitle,institutional_text,logo_url,whatsapp,instagram,whatsapp_message,footer_text,show_colors,show_measurements,show_technical_sheet";
+const settingsSelect = "brand_name,subtitle,institutional_text,logo_url,whatsapp,instagram,legal_name,tax_id,contact_email,business_address,whatsapp_message,footer_text,show_colors,show_measurements,show_technical_sheet";
 
 export const getPublicProducts = cache(async (): Promise<Product[]> => {
   if (!hasSupabaseEnv) return demoProducts;
@@ -75,17 +85,23 @@ export const getPublicProducts = cache(async (): Promise<Product[]> => {
 });
 
 export const getPublicProductCards = cache(async (): Promise<PublicProductCard[]> => {
-  if (!hasSupabaseEnv) return demoProducts.map(({ id, name, slug, category, price, promotionalPrice, sortOrder, mainImageUrl, mainImageAlt }) => ({ id, name, slug, category, price, promotionalPrice, sortOrder, mainImageUrl, mainImageAlt }));
+  if (!hasSupabaseEnv) return demoProducts.map(({ id, name, slug, category, price, sortOrder, mainImageUrl, mainImageAlt, variants }) => ({ id, name, slug, category, sortOrder, mainImageUrl, mainImageAlt, startingPrice: getStartingPrice(variants, price) }));
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productCardSelect).eq("active", true).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar o catálogo: ${error.message}`);
-  return (data ?? []).map((row) => ({
-    id: String(row.id), name: String(row.name), slug: String(row.slug), category: row.category as Category,
-    price: Number(row.price), promotionalPrice: row.promotional_price == null ? null : Number(row.promotional_price),
-    sortOrder: Number(row.sort_order ?? 0),
-    mainImageUrl: String(row.processed_image_url ?? row.main_image_url ?? "/demo-products/product-01.svg"),
-    mainImageAlt: String(row.main_image_alt ?? row.name),
-  }));
+  return (data ?? []).map((row) => {
+    const variants = ((row.product_variants ?? []) as DbRow[]).map((item) => ({
+      model: String(item.model) as Product["variants"][number]["model"], price: Number(item.price),
+      promotionalPrice: item.promotional_price == null ? null : Number(item.promotional_price),
+      active: Boolean(item.active), sortOrder: Number(item.sort_order),
+    }));
+    return {
+      id: String(row.id), name: String(row.name), slug: String(row.slug), category: row.category as Category,
+      sortOrder: Number(row.sort_order ?? 0), startingPrice: getStartingPrice(variants, Number(row.price)),
+      mainImageUrl: String(row.processed_image_url ?? row.main_image_url ?? "/demo-products/product-01.svg"),
+      mainImageAlt: String(row.main_image_alt ?? row.name),
+    };
+  });
 });
 
 export const getAllProducts = cache(async (): Promise<Product[]> => {
@@ -124,6 +140,10 @@ export const getCatalogSettings = cache(async (): Promise<CatalogSettings> => {
     logoUrl: data.logo_url,
     whatsapp: data.whatsapp,
     instagram: data.instagram,
+    legalName: data.legal_name,
+    taxId: data.tax_id,
+    contactEmail: data.contact_email,
+    businessAddress: data.business_address,
     whatsappMessage: data.whatsapp_message,
     footerText: data.footer_text,
     showColors: data.show_colors,

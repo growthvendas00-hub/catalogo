@@ -1,5 +1,6 @@
 import { CatalogExplorer } from "@/components/catalog-explorer";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { getCatalogSettings, getPublicProductCards } from "@/lib/catalog";
 
 export default async function HomePage() {
@@ -24,9 +25,7 @@ export default async function HomePage() {
           <div className="flex min-h-64 items-end p-[var(--page-gutter)]"><p className="max-w-xl text-2xl leading-tight tracking-[-.025em] sm:text-4xl">{settings.institutionalText}</p></div>
         </section>
       </main>
-      <footer className="container-wide flex flex-col gap-4 px-[var(--page-gutter)] py-8 text-xs uppercase tracking-[.08em] text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
-        <p>{settings.footerText}</p><div className="flex flex-wrap gap-x-5 gap-y-2"><p>Atendimento direto · pagamento seguro pelo Mercado Pago</p>{settings.instagram && <a className="underline underline-offset-4" href={`https://instagram.com/${settings.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}`} target="_blank" rel="noreferrer">Instagram de {settings.brandName}</a>}</div>
-      </footer>
+      <SiteFooter settings={settings} />
     </>
   );
 }

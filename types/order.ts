@@ -21,6 +21,7 @@ export type Order = {
   productName: string;
   productSlug: string;
   productImageUrl: string | null;
+  selectedModel: string | null;
   selectedSize: string | null;
   selectedColor: string | null;
   quantity: number;
@@ -49,6 +50,7 @@ export type PublicOrder = Pick<
   | "productName"
   | "productSlug"
   | "productImageUrl"
+  | "selectedModel"
   | "selectedSize"
   | "selectedColor"
   | "quantity"

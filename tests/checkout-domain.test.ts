@@ -3,7 +3,7 @@ import { checkoutFingerprint, checkoutSchema, normalizePhone, resolveCheckoutAtt
 
 const input = {
   checkoutAttemptId: "550e8400-e29b-41d4-a716-446655440000",
-  productId: "10000000-0000-0000-0000-000000000001",
+  productId: "10000000-0000-0000-0000-000000000001", model: "Oversized" as const,
   size: "M", color: "Preto", quantity: 2,
   customer: { name: "Cliente Teste", email: "TESTE@example.com", phone: "+55 (11) 99999-9999", notes: "" },
   price: 0.01,
@@ -21,18 +21,20 @@ describe("checkout validation", () => {
   });
   it("rejects invalid quantity, inactive product, size and color", () => {
     expect(checkoutSchema.safeParse({ ...input, quantity: 0 }).success).toBe(false);
-    const base = { active: true, price: 90, promotionalPrice: null, sizes: ["M"], colors: ["Preto"] };
+    const base = { active: true, variants: [{ model: "Oversized", price: 90, promotionalPrice: null, active: true }], sizes: ["M"], colors: ["Preto"] };
     expect(validateProductSelection({ ...base, active: false }, input).error).toBe("inactive");
+    expect(validateProductSelection(base, { ...input, model: "Tradicional" }).error).toBe("model");
     expect(validateProductSelection(base, { ...input, size: "GG" }).error).toBe("size");
     expect(validateProductSelection(base, { ...input, color: "Azul" }).error).toBe("color");
   });
   it("always derives the charge from the trusted product", () => {
-    expect(validateProductSelection({ active: true, price: 90, promotionalPrice: 75, sizes: ["M"], colors: ["Preto"] }, input)).toMatchObject({ ok: true, unitPrice: 75, totalAmount: 150 });
+    expect(validateProductSelection({ active: true, variants: [{ model: "Oversized", price: 90, promotionalPrice: 75, active: true }], sizes: ["M"], colors: ["Preto"] }, input)).toMatchObject({ ok: true, unitPrice: 75, totalAmount: 150 });
   });
   it("keeps the same fingerprint for the same intent", () => {
     const first = checkoutSchema.parse(input);
     expect(checkoutFingerprint(first)).toBe(checkoutFingerprint({ ...first }));
     expect(checkoutFingerprint({ ...first, quantity: 3 })).not.toBe(checkoutFingerprint(first));
+    expect(checkoutFingerprint({ ...first, model: "Tradicional" })).not.toBe(checkoutFingerprint(first));
   });
   it("reuses one order for the same attempt and creates for a new attempt", () => {
     const fingerprint = checkoutFingerprint(checkoutSchema.parse(input));

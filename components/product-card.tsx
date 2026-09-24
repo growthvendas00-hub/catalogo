@@ -4,10 +4,9 @@ import { formatPrice } from "@/lib/format";
 import type { PublicProductCard } from "@/types/catalog";
 
 export function ProductCard({ product, index }: { product: PublicProductCard; index: number }) {
-  const finalPrice = product.promotionalPrice ?? product.price;
   return (
     <article className="catalog-cell group">
-      <Link href={`/produto/${product.slug}`} className="block h-full" aria-label={`Ver ${product.name}, ${formatPrice(finalPrice)}`}>
+      <Link href={`/produto/${product.slug}`} className="block h-full" aria-label={`Ver ${product.name}, a partir de ${formatPrice(product.startingPrice)}`}>
         <div className="relative aspect-[4/5] overflow-hidden bg-[#e9e6de]">
           <Image
             src={product.mainImageUrl}
@@ -22,10 +21,7 @@ export function ProductCard({ product, index }: { product: PublicProductCard; in
         <div className="min-h-[6.8rem] border-t fine-rule p-3 sm:min-h-32 sm:p-5">
           <p className="mb-2 text-[.58rem] font-bold tracking-[.13em] text-[var(--muted)] uppercase sm:text-[.65rem]">{product.category}</p>
           <h2 className="max-w-[22ch] text-[.78rem] font-semibold leading-[1.25] tracking-[.035em] uppercase sm:text-sm">{product.name}</h2>
-          <div className="mt-3 flex flex-wrap items-baseline gap-x-2 text-xs sm:text-sm">
-            {product.promotionalPrice && <span className="text-[.65rem] text-[var(--muted)] line-through sm:text-xs">{formatPrice(product.price)}</span>}
-            <span className="font-semibold tabular-nums">{formatPrice(finalPrice)}</span>
-          </div>
+          <p className="mt-3 text-xs font-semibold tabular-nums sm:text-sm">A partir de {formatPrice(product.startingPrice)}</p>
         </div>
       </Link>
     </article>

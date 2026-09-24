@@ -1,4 +1,6 @@
-export const hasSupabaseEnv = Boolean(
+const forcedDemoMode = process.env.LAUS_SIT_DEMO_MODE === "1";
+
+export const hasSupabaseEnv = !forcedDemoMode && Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
 

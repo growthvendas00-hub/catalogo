@@ -48,6 +48,7 @@ export function OrderReceipt({ initialOrder }: { initialOrder: PublicOrder }) {
       <p className="mt-6 max-w-xl text-sm leading-7 text-[var(--muted)]">{statusMessage(order.paymentStatus)}</p>
       <dl className="mt-8 border-t fine-rule text-sm">
         <div className="grid grid-cols-[8rem_1fr] gap-3 border-b fine-rule py-3"><dt className="eyebrow text-[var(--muted)]">Peça</dt><dd>{order.productName}</dd></div>
+        {order.selectedModel && <div className="grid grid-cols-[8rem_1fr] gap-3 border-b fine-rule py-3"><dt className="eyebrow text-[var(--muted)]">Modelagem</dt><dd>{order.selectedModel}</dd></div>}
         {order.selectedSize && <div className="grid grid-cols-[8rem_1fr] gap-3 border-b fine-rule py-3"><dt className="eyebrow text-[var(--muted)]">Tamanho</dt><dd>{order.selectedSize}</dd></div>}
         {order.selectedColor && <div className="grid grid-cols-[8rem_1fr] gap-3 border-b fine-rule py-3"><dt className="eyebrow text-[var(--muted)]">Cor</dt><dd>{order.selectedColor}</dd></div>}
         <div className="grid grid-cols-[8rem_1fr] gap-3 border-b fine-rule py-3"><dt className="eyebrow text-[var(--muted)]">Quantidade</dt><dd>{order.quantity}</dd></div>

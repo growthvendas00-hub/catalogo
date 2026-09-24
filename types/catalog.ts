@@ -1,4 +1,17 @@
-export type Category = "Baby Look" | "Tradicional" | "Oversized";
+export const RELIGIOUS_CATEGORIES = ["Cristianismo", "Matriz africana", "Ocultismo e misticismo"] as const;
+export type Category = (typeof RELIGIOUS_CATEGORIES)[number];
+
+export const GARMENT_MODELS = ["Tradicional", "Baby Look", "Oversized"] as const;
+export type GarmentModel = (typeof GARMENT_MODELS)[number];
+
+export type ProductVariant = {
+  id?: string;
+  model: GarmentModel;
+  price: number;
+  promotionalPrice?: number | null;
+  active: boolean;
+  sortOrder?: number;
+};
 
 export type ProductColor = {
   id?: string;
@@ -47,15 +60,15 @@ export type Product = {
   mainImageUrl: string;
   mainImageAlt: string;
   images: ProductImage[];
+  variants: ProductVariant[];
   colors: ProductColor[];
   sizes: string[];
   measurements: ProductMeasurement[];
 };
 
-export type PublicProductCard = Pick<
-  Product,
-  "id" | "name" | "slug" | "category" | "price" | "promotionalPrice" | "sortOrder" | "mainImageUrl" | "mainImageAlt"
->;
+export type PublicProductCard = Pick<Product, "id" | "name" | "slug" | "category" | "sortOrder" | "mainImageUrl" | "mainImageAlt"> & {
+  startingPrice: number;
+};
 
 export type CatalogSettings = {
   brandName: string;
@@ -64,6 +77,10 @@ export type CatalogSettings = {
   logoUrl?: string | null;
   whatsapp?: string | null;
   instagram?: string | null;
+  legalName?: string | null;
+  taxId?: string | null;
+  contactEmail?: string | null;
+  businessAddress?: string | null;
   whatsappMessage: string;
   footerText: string;
   showColors: boolean;

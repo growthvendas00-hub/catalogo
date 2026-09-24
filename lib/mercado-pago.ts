@@ -10,6 +10,7 @@ type CreatePreferenceInput = {
   publicToken: string;
   productId: string;
   productName: string;
+  selectedModel: string;
   productDescription: string;
   productImageUrl: string | null;
   quantity: number;
@@ -75,7 +76,7 @@ export async function createMercadoPagoPreference(input: CreatePreferenceInput) 
     body: JSON.stringify({
       items: [{
         id: input.productId,
-        title: input.productName,
+        title: `${input.productName} — ${input.selectedModel}`,
         description: input.productDescription,
         picture_url: absoluteImageUrl(input.productImageUrl, input.origin),
         currency_id: "BRL",

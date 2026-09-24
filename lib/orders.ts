@@ -6,8 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Order, PublicOrder } from "@/types/order";
 
 type DbOrder = Record<string, unknown>;
-const orderSelect = "id,public_token,product_id,product_name,product_slug,product_image_url,selected_size,selected_color,quantity,unit_price,total_amount,customer_name,customer_email,customer_phone,customer_notes,payment_status,payment_status_detail,fulfillment_status,admin_notes,mercado_pago_preference_id,mercado_pago_payment_id,mercado_pago_payment_method,mercado_pago_payment_type,paid_at,created_at,updated_at";
-const publicOrderSelect = "id,public_token,product_name,product_slug,product_image_url,selected_size,selected_color,quantity,unit_price,total_amount,payment_status,payment_status_detail,fulfillment_status,paid_at,created_at,updated_at";
+const orderSelect = "id,public_token,product_id,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,total_amount,customer_name,customer_email,customer_phone,customer_notes,payment_status,payment_status_detail,fulfillment_status,admin_notes,mercado_pago_preference_id,mercado_pago_payment_id,mercado_pago_payment_method,mercado_pago_payment_type,paid_at,created_at,updated_at";
+const publicOrderSelect = "id,public_token,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,total_amount,payment_status,payment_status_detail,fulfillment_status,paid_at,created_at,updated_at";
 
 export function mapOrder(row: DbOrder): Order {
   return {
@@ -17,6 +17,7 @@ export function mapOrder(row: DbOrder): Order {
     productName: String(row.product_name),
     productSlug: String(row.product_slug),
     productImageUrl: row.product_image_url ? String(row.product_image_url) : null,
+    selectedModel: row.selected_model ? String(row.selected_model) : null,
     selectedSize: row.selected_size ? String(row.selected_size) : null,
     selectedColor: row.selected_color ? String(row.selected_color) : null,
     quantity: Number(row.quantity),
@@ -46,6 +47,7 @@ export function mapPublicOrder(row: DbOrder): PublicOrder {
     productName: String(row.product_name),
     productSlug: String(row.product_slug),
     productImageUrl: row.product_image_url ? String(row.product_image_url) : null,
+    selectedModel: row.selected_model ? String(row.selected_model) : null,
     selectedSize: row.selected_size ? String(row.selected_size) : null,
     selectedColor: row.selected_color ? String(row.selected_color) : null,
     quantity: Number(row.quantity),

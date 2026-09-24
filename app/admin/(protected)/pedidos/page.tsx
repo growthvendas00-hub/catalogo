@@ -34,7 +34,7 @@ export default async function AdminOrdersPage() {
               <li key={order.id} className="border-b fine-rule">
                 <Link href={`/admin/pedidos/${order.id}`} className="grid gap-3 px-4 py-5 transition-colors hover:bg-white/45 xl:grid-cols-[8rem_minmax(12rem,1fr)_10rem_9rem_9rem_3rem] xl:items-center xl:gap-4">
                   <span className="text-xs tabular-nums text-[var(--muted)]">{formatDateTime(order.createdAt)}</span>
-                  <span><strong className="block text-sm">{order.customerName}</strong><small className="mt-1 block text-xs text-[var(--muted)]">{order.productName}{order.selectedSize ? ` · ${order.selectedSize}` : ""}{order.selectedColor ? ` · ${order.selectedColor}` : ""}</small></span>
+                  <span><strong className="block text-sm">{order.customerName}</strong><small className="mt-1 block text-xs text-[var(--muted)]">{order.productName}{order.selectedModel ? ` · ${order.selectedModel}` : ""}{order.selectedSize ? ` · ${order.selectedSize}` : ""}{order.selectedColor ? ` · ${order.selectedColor}` : ""}</small></span>
                   <span className={`text-xs font-semibold ${order.paymentStatus === "approved" ? "text-[var(--success)]" : "text-black/60"}`}>{paymentLabel(order.paymentStatus)}</span>
                   <span className="text-xs">{fulfillmentStatusLabels[order.fulfillmentStatus]}</span>
                   <span className="text-sm font-semibold tabular-nums">{formatPrice(order.totalAmount)}</span>
@@ -48,4 +48,3 @@ export default async function AdminOrdersPage() {
     </main>
   );
 }
-

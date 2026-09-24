@@ -5,15 +5,17 @@ import { PaymentAssociationError, validatePaymentAssociation } from "@/lib/merca
 
 describe("public data boundaries", () => {
   it("maps the processed image without exposing the original", () => {
-    const product = mapPublicProduct({ id: "p", name: "Peça", slug: "peca", category: "Tradicional", price: 10, active: true, sort_order: 1, main_image_url: "public-old", processed_image_url: "public-final", original_image_url: "private-original", original_image_path: "secret/path", product_images: [], product_colors: [], product_sizes: [], product_measurements: [] });
+    const product = mapPublicProduct({ id: "p", name: "Peça", slug: "peca", category: "Cristianismo", price: 10, active: true, sort_order: 1, main_image_url: "public-old", processed_image_url: "public-final", original_image_url: "private-original", original_image_path: "secret/path", product_images: [], product_variants: [{ id: "v", model: "Tradicional", price: 10, active: true, sort_order: 0 }], product_colors: [], product_sizes: [], product_measurements: [] });
     expect(product.mainImageUrl).toBe("public-final");
     expect(product).not.toHaveProperty("originalImageUrl");
+    expect(product.variants[0]).toMatchObject({ model: "Tradicional", price: 10, active: true });
     expect(JSON.stringify(product)).not.toContain("secret/path");
   });
   it("returns a PublicOrder without customer PII", () => {
-    const order = mapPublicOrder({ public_token: "token", product_name: "Peça", product_slug: "peca", quantity: 1, unit_price: 10, total_amount: 10, payment_status: "pending", fulfillment_status: "new", created_at: "now", updated_at: "now", customer_name: "Segredo", customer_email: "secret@example.com", customer_phone: "11999999999" });
+    const order = mapPublicOrder({ public_token: "token", product_name: "Peça", product_slug: "peca", selected_model: "Tradicional", quantity: 1, unit_price: 10, total_amount: 10, payment_status: "pending", fulfillment_status: "new", created_at: "now", updated_at: "now", customer_name: "Segredo", customer_email: "secret@example.com", customer_phone: "11999999999" });
     expect(order).not.toHaveProperty("customerName");
     expect(JSON.stringify(order)).not.toContain("secret@example.com");
+    expect(order.selectedModel).toBe("Tradicional");
   });
   it("rejects token A with payment B before persistence", () => {
     expect(() => validatePaymentAssociation({ id: "pay-b", external_reference: "order-b" }, "order-a")).toThrow(PaymentAssociationError);

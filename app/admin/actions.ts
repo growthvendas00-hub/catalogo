@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
 import { slugify } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { GARMENT_MODELS, RELIGIOUS_CATEGORIES } from "@/types/catalog";
 
 export type ActionState = { ok: boolean; message: string; fieldErrors?: Record<string, string[]> };
 
@@ -14,9 +15,7 @@ const productSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2, "Informe o nome da peça."),
   slug: z.string().trim().min(2, "Informe o slug."),
-  category: z.enum(["Baby Look", "Tradicional", "Oversized"]),
-  price: z.coerce.number().nonnegative("Informe um preço válido."),
-  promotionalPrice: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
+  category: z.enum(RELIGIOUS_CATEGORIES),
   shortDescription: z.string().trim().min(5, "Escreva uma descrição curta."),
   description: z.string().trim().min(5, "Escreva a descrição completa."),
   active: z.boolean(),
@@ -27,12 +26,25 @@ const productSchema = z.object({
   gsm: z.string().trim(), fit: z.string().trim(), printingMethod: z.string().trim(),
   finish: z.string().trim(), technicalNotes: z.string().trim(), careInstructions: z.string().trim(), observations: z.string().trim(),
   sizes: z.array(z.string()),
+  variants: z.array(z.object({
+    model: z.enum(GARMENT_MODELS), price: z.coerce.number().nonnegative(),
+    promotionalPrice: z.number().nonnegative().nullable().optional(), active: z.boolean(), sortOrder: z.number().optional(),
+  })).length(GARMENT_MODELS.length, "Configure as três modelagens."),
   colors: z.array(z.object({ name: z.string().min(1), hex: z.string().nullable().optional() })),
   measurements: z.array(z.object({ size: z.string().min(1), width: z.coerce.number().nonnegative(), length: z.coerce.number().nonnegative(), extra: z.record(z.string(), z.union([z.string(), z.number()])).optional() })),
   images: z.array(z.object({ url: z.string().min(1), alt: z.string(), sortOrder: z.number().optional() })),
 }).superRefine((value, context) => {
-  if (value.active && value.price < 0.5) context.addIssue({ code: "custom", path: ["price"], message: "Produto ativo precisa custar ao menos R$ 0,50." });
-  if (value.active && value.promotionalPrice !== "" && Number(value.promotionalPrice) < 0.5) context.addIssue({ code: "custom", path: ["promotionalPrice"], message: "Promoção ativa precisa custar ao menos R$ 0,50." });
+  const models = new Set(value.variants.map((variant) => variant.model));
+  if (models.size !== GARMENT_MODELS.length || GARMENT_MODELS.some((model) => !models.has(model))) {
+    context.addIssue({ code: "custom", path: ["variants"], message: "Configure Tradicional, Baby Look e Oversized uma única vez." });
+  }
+  const activeVariants = value.variants.filter((variant) => variant.active);
+  if (value.active && activeVariants.length === 0) context.addIssue({ code: "custom", path: ["variants"], message: "Ative pelo menos uma modelagem." });
+  for (const variant of activeVariants) {
+    if (variant.price < 0.5) context.addIssue({ code: "custom", path: ["variants"], message: `${variant.model} precisa custar ao menos R$ 0,50.` });
+    if (variant.promotionalPrice != null && variant.promotionalPrice < 0.5) context.addIssue({ code: "custom", path: ["variants"], message: `O preço promocional de ${variant.model} precisa custar ao menos R$ 0,50.` });
+    if (variant.promotionalPrice != null && variant.promotionalPrice >= variant.price) context.addIssue({ code: "custom", path: ["variants"], message: `A promoção de ${variant.model} precisa ser menor que o preço normal.` });
+  }
 });
 
 function jsonField<T>(formData: FormData, name: string, fallback: T): T {
@@ -64,8 +76,6 @@ export async function saveProductAction(_state: ActionState, formData: FormData)
     name: String(formData.get("name") ?? ""),
     slug: slugify(String(formData.get("slug") || formData.get("name") || "")),
     category: formData.get("category"),
-    price: formData.get("price"),
-    promotionalPrice: formData.get("promotionalPrice") ?? "",
     shortDescription: String(formData.get("shortDescription") ?? ""),
     description: String(formData.get("description") ?? ""),
     active: formData.get("active") === "on",
@@ -75,6 +85,7 @@ export async function saveProductAction(_state: ActionState, formData: FormData)
     fabric: String(formData.get("fabric") ?? ""), composition: String(formData.get("composition") ?? ""), threadType: String(formData.get("threadType") ?? ""),
     gsm: String(formData.get("gsm") ?? ""), fit: String(formData.get("fit") ?? ""), printingMethod: String(formData.get("printingMethod") ?? ""), finish: String(formData.get("finish") ?? ""), technicalNotes: String(formData.get("technicalNotes") ?? ""), careInstructions: String(formData.get("careInstructions") ?? ""), observations: String(formData.get("observations") ?? ""),
     sizes: jsonField<string[]>(formData, "sizesJson", []),
+    variants: jsonField(formData, "variantsJson", []),
     colors: jsonField(formData, "colorsJson", []),
     measurements: jsonField(formData, "measurementsJson", []),
     images: jsonField(formData, "imagesJson", []),
@@ -142,6 +153,10 @@ export async function saveSettingsAction(_state: ActionState, formData: FormData
     logo_url: String(formData.get("logoUrl") ?? "") || null,
     whatsapp: String(formData.get("whatsapp") ?? "") || null,
     instagram: String(formData.get("instagram") ?? "") || null,
+    legal_name: String(formData.get("legalName") ?? "").trim() || null,
+    tax_id: String(formData.get("taxId") ?? "").trim() || null,
+    contact_email: String(formData.get("contactEmail") ?? "").trim().toLowerCase() || null,
+    business_address: String(formData.get("businessAddress") ?? "").trim() || null,
     whatsapp_message: String(formData.get("whatsappMessage") ?? ""),
     footer_text: String(formData.get("footerText") ?? ""),
     show_colors: formData.get("showColors") === "on",

@@ -4,15 +4,15 @@ import { useActionState, useState } from "react";
 import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { saveProductAction, type ActionState } from "@/app/admin/actions";
 import { slugify } from "@/lib/format";
-import type { Product, ProductColor, ProductImage, ProductMeasurement } from "@/types/catalog";
+import { GARMENT_MODELS, RELIGIOUS_CATEGORIES, type Product, type ProductColor, type ProductImage, type ProductMeasurement, type ProductVariant } from "@/types/catalog";
 
 const initialState: ActionState = { ok: false, message: "" };
 const emptyProduct: Product = {
-  id: "", name: "", slug: "", category: "Tradicional", price: 0, promotionalPrice: null,
+  id: "", name: "", slug: "", category: "Cristianismo", price: 0, promotionalPrice: null,
   shortDescription: "", description: "", fabric: "", composition: "", threadType: "", gsm: "",
   fit: "Tradicional", printingMethod: "", finish: "", technicalNotes: "", careInstructions: "",
   observations: "", active: true, sortOrder: 0, mainImageUrl: "/demo-products/product-02.svg",
-  mainImageAlt: "", images: [], colors: [], sizes: [], measurements: [],
+  mainImageAlt: "", images: [], variants: GARMENT_MODELS.map((model, sortOrder) => ({ model, price: 0, promotionalPrice: null, active: true, sortOrder })), colors: [], sizes: [], measurements: [],
 };
 
 function FieldError({ errors }: { errors?: string[] }) { return errors?.length ? <span className="normal-case tracking-normal text-[var(--danger)]">{errors[0]}</span> : null; }
@@ -25,6 +25,7 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
   const [slug, setSlug] = useState(product.slug);
   const [slugTouched, setSlugTouched] = useState(Boolean(product.slug));
   const [sizes, setSizes] = useState<string[]>(product.sizes);
+  const [variants, setVariants] = useState<ProductVariant[]>(product.variants.length ? product.variants : emptyProduct.variants);
   const [newSize, setNewSize] = useState("");
   const [colors, setColors] = useState<ProductColor[]>(product.colors);
   const [measurements, setMeasurements] = useState<ProductMeasurement[]>(product.measurements);
@@ -36,6 +37,7 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
   return <form action={action} className="max-w-5xl">
     {product.id && <input type="hidden" name="id" value={product.id} />}
     <input type="hidden" name="sizesJson" value={JSON.stringify(sizes)} />
+    <input type="hidden" name="variantsJson" value={JSON.stringify(variants)} />
     <input type="hidden" name="colorsJson" value={JSON.stringify(colors)} />
     <input type="hidden" name="measurementsJson" value={JSON.stringify(measurements)} />
     <input type="hidden" name="imagesJson" value={JSON.stringify(images)} />
@@ -44,13 +46,25 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="admin-label sm:col-span-2">Nome<FieldError errors={state.fieldErrors?.name} /><input className="admin-input" name="name" value={name} onChange={(event) => changeName(event.target.value)} required /></label>
         <label className="admin-label">Slug<FieldError errors={state.fieldErrors?.slug} /><input className="admin-input" name="slug" value={slug} onChange={(event) => { setSlugTouched(true); setSlug(slugify(event.target.value)); }} required /></label>
-        <label className="admin-label">Categoria<select className="admin-input" name="category" defaultValue={product.category}><option>Baby Look</option><option>Tradicional</option><option>Oversized</option></select></label>
-        <label className="admin-label">Preço (R$)<FieldError errors={state.fieldErrors?.price} /><input className="admin-input" name="price" type="number" min="0.50" step="0.01" defaultValue={product.price} required /></label>
-        <label className="admin-label">Preço promocional (R$)<FieldError errors={state.fieldErrors?.promotionalPrice} /><input className="admin-input" name="promotionalPrice" type="number" min="0.50" step="0.01" defaultValue={product.promotionalPrice ?? ""} /></label>
+        <label className="admin-label">Religião / linha<select className="admin-input" name="category" defaultValue={product.category}>{RELIGIOUS_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></label>
         <label className="admin-label sm:col-span-2">Descrição curta<FieldError errors={state.fieldErrors?.shortDescription} /><textarea className="admin-input min-h-24 normal-case tracking-normal" name="shortDescription" defaultValue={product.shortDescription} required /></label>
         <label className="admin-label sm:col-span-2">Descrição completa<FieldError errors={state.fieldErrors?.description} /><textarea className="admin-input min-h-36 normal-case tracking-normal" name="description" defaultValue={product.description} required /></label>
         <label className="admin-label">Posição no catálogo<input className="admin-input" name="sortOrder" type="number" min="0" defaultValue={product.sortOrder} /></label>
         <label className="flex min-h-12 items-center gap-3 self-end border fine-rule bg-[var(--paper-bright)] px-3 text-sm"><input name="active" type="checkbox" defaultChecked={product.active} className="size-5 accent-black" /> Produto ativo e visível</label>
+      </div>
+    </Section>
+
+    <Section title="Modelagens e preços" note="Defina o valor de cada opção. O menor preço ativo será mostrado na vitrine como “A partir de”.">
+      <FieldError errors={state.fieldErrors?.variants} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        {variants.map((variant, index) => <fieldset key={variant.model} className="border fine-rule bg-[var(--paper-bright)] p-4">
+          <legend className="eyebrow px-1">{variant.model}</legend>
+          <label className="mt-2 flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" className="size-5 accent-black" checked={variant.active} onChange={(event) => setVariants(variants.map((item, itemIndex) => itemIndex === index ? { ...item, active: event.target.checked } : item))} />Disponível nesta peça</label>
+          <div className="mt-4 grid gap-4">
+            <label className="admin-label">Preço (R$)<input className="admin-input" type="number" min={variant.active ? "0.50" : "0"} step="0.01" value={variant.price || ""} onChange={(event) => setVariants(variants.map((item, itemIndex) => itemIndex === index ? { ...item, price: Number(event.target.value) } : item))} required={variant.active} /></label>
+            <label className="admin-label">Promocional (opcional)<input className="admin-input" type="number" min="0.50" step="0.01" value={variant.promotionalPrice ?? ""} onChange={(event) => setVariants(variants.map((item, itemIndex) => itemIndex === index ? { ...item, promotionalPrice: event.target.value ? Number(event.target.value) : null } : item))} /></label>
+          </div>
+        </fieldset>)}
       </div>
     </Section>
 
@@ -64,7 +78,7 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
       <div className="grid gap-5 sm:grid-cols-2"><label className="admin-label">Tecido<input className="admin-input" name="fabric" defaultValue={product.fabric} /></label><label className="admin-label">Composição<input className="admin-input" name="composition" defaultValue={product.composition} /></label><label className="admin-label">Fio / tipo de algodão<input className="admin-input" name="threadType" defaultValue={product.threadType} /></label><label className="admin-label">Gramatura<input className="admin-input" name="gsm" defaultValue={product.gsm} /></label><label className="admin-label">Modelagem<input className="admin-input" name="fit" defaultValue={product.fit} /></label><label className="admin-label">Método de personalização<input className="admin-input" name="printingMethod" defaultValue={product.printingMethod} /></label><label className="admin-label sm:col-span-2">Acabamento<input className="admin-input" name="finish" defaultValue={product.finish} /></label><label className="admin-label sm:col-span-2">Observações técnicas<textarea className="admin-input min-h-24 normal-case tracking-normal" name="technicalNotes" defaultValue={product.technicalNotes} /></label></div>
     </Section>
 
-    <Section title="Tamanhos" note="Adicione qualquer nomenclatura necessária; não há lista fechada.">
+    <Section title="Tamanhos (P, M, G...)" note="As modelagens ficam na seção acima. Aqui entram os tamanhos de grade disponíveis para a peça.">
       <div className="flex flex-wrap gap-2">{sizes.map((size) => <button key={size} type="button" className="flex min-h-11 items-center gap-2 border fine-rule bg-[var(--paper-bright)] px-3 text-xs font-semibold" onClick={() => setSizes(sizes.filter((item) => item !== size))}>{size}<Trash2 size={13} aria-label={`Remover ${size}`} /></button>)}</div>
       <div className="mt-4 flex max-w-sm gap-2"><input className="admin-input" value={newSize} onChange={(event) => setNewSize(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSize(); } }} placeholder="Ex.: G2" aria-label="Novo tamanho" /><button type="button" className="button-secondary shrink-0" onClick={addSize}><Plus size={15} /> Adicionar</button></div>
     </Section>

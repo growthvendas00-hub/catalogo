@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { GARMENT_MODELS } from "@/types/catalog";
 
 export const postgresUuid = z.string().trim().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
@@ -14,6 +15,7 @@ export function normalizePhone(value: string) {
 export const checkoutSchema = z.object({
   checkoutAttemptId: z.uuid(),
   productId: postgresUuid,
+  model: z.enum(GARMENT_MODELS),
   size: z.string().trim().max(40).optional().default(""),
   color: z.string().trim().max(80).optional().default(""),
   quantity: z.coerce.number().int().min(1).max(10),
@@ -33,7 +35,7 @@ export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
 export function checkoutFingerprint(input: CheckoutInput) {
   return createHash("sha256").update(JSON.stringify({
-    productId: input.productId, size: input.size, color: input.color,
+    productId: input.productId, model: input.model, size: input.size, color: input.color,
     quantity: input.quantity, customer: input.customer,
   })).digest("hex");
 }
@@ -46,16 +48,17 @@ export function resolveCheckoutAttempt(existing: { checkout_fingerprint: string 
 
 export function validateProductSelection(product: {
   active: boolean;
-  price: number;
-  promotionalPrice?: number | null;
+  variants: Array<{ model: string; price: number; promotionalPrice?: number | null; active: boolean }>;
   sizes: string[];
   colors: string[];
-}, input: Pick<CheckoutInput, "size" | "color" | "quantity">) {
+}, input: Pick<CheckoutInput, "model" | "size" | "color" | "quantity">) {
   if (!product.active) return { ok: false as const, error: "inactive" };
+  const variant = product.variants.find((item) => item.model === input.model && item.active);
+  if (!variant) return { ok: false as const, error: "model" };
   if (product.sizes.length > 0 && !product.sizes.includes(input.size)) return { ok: false as const, error: "size" };
   if (product.colors.length > 0 && !product.colors.includes(input.color)) return { ok: false as const, error: "color" };
   if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 10) return { ok: false as const, error: "quantity" };
-  const unitPrice = Number(product.promotionalPrice ?? product.price);
+  const unitPrice = Number(variant.promotionalPrice ?? variant.price);
   if (!Number.isFinite(unitPrice) || unitPrice < 0.5) return { ok: false as const, error: "price" };
   return { ok: true as const, unitPrice, totalAmount: Number((unitPrice * input.quantity).toFixed(2)) };
 }

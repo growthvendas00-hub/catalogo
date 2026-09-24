@@ -3,26 +3,30 @@
 import { useRef, useState } from "react";
 import { CreditCard, LoaderCircle, ShieldCheck } from "lucide-react";
 import { formatPrice } from "@/lib/format";
-import type { ProductColor } from "@/types/catalog";
+import { effectiveVariantPrice, getStartingPrice } from "@/lib/product-pricing";
+import type { ProductColor, ProductVariant } from "@/types/catalog";
 
 type CheckoutResponse = { checkoutUrl?: string; error?: string };
 
 export function CheckoutForm({
   productId,
-  price,
+  variants,
   sizes,
   colors,
 }: {
   productId: string;
-  price: number;
+  variants: ProductVariant[];
   sizes: string[];
   colors: ProductColor[];
 }) {
   const [quantity, setQuantity] = useState(1);
+  const [selectedModel, setSelectedModel] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const checkoutAttemptId = useRef<string | null>(null);
-  const total = price * quantity;
+  const selectedVariant = variants.find((variant) => variant.model === selectedModel && variant.active);
+  const unitPrice = selectedVariant ? effectiveVariantPrice(selectedVariant) : getStartingPrice(variants);
+  const total = unitPrice * quantity;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,6 +42,7 @@ export function CheckoutForm({
         body: JSON.stringify({
           checkoutAttemptId: checkoutAttemptId.current,
           productId,
+          model: String(formData.get("model") ?? ""),
           size: String(formData.get("size") ?? ""),
           color: String(formData.get("color") ?? ""),
           quantity,
@@ -72,8 +77,16 @@ export function CheckoutForm({
         <ShieldCheck className="shrink-0 text-[var(--success)]" size={24} aria-hidden />
       </div>
 
-      <form className="mt-6 space-y-4" onSubmit={submit}>
+      <form className="mt-6 space-y-4" onSubmit={submit} onChange={() => { if (!pending) checkoutAttemptId.current = null; }}>
         <div className="grid gap-4 sm:grid-cols-2">
+          <label className="admin-label">Modelagem
+            <select className="admin-input" name="model" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} required>
+              <option value="" disabled>Selecione</option>
+              {variants.filter((variant) => variant.active).map((variant) => (
+                <option key={variant.model} value={variant.model}>{variant.model} — {formatPrice(effectiveVariantPrice(variant))}</option>
+              ))}
+            </select>
+          </label>
           {sizes.length > 0 && (
             <label className="admin-label">Tamanho
               <select className="admin-input" name="size" defaultValue="" required>
@@ -107,8 +120,13 @@ export function CheckoutForm({
           <textarea className="admin-input min-h-20 normal-case tracking-normal" name="notes" maxLength={600} placeholder="Personalização, prazo ou outra informação importante" />
         </label>
 
+        <label className="flex items-start gap-3 text-xs leading-relaxed text-[var(--muted)]">
+          <input className="mt-0.5 size-5 shrink-0 accent-black" type="checkbox" required />
+          <span>Li e concordo com os <a className="font-semibold text-black underline underline-offset-4" href="/termos-de-uso" target="_blank">Termos de Uso</a> e com a <a className="font-semibold text-black underline underline-offset-4" href="/privacidade" target="_blank">Política de Privacidade</a>.</span>
+        </label>
+
         <div className="flex flex-col gap-3 border-t fine-rule pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div><span className="eyebrow text-[var(--muted)]">Total</span><p className="mt-1 text-xl font-semibold tabular-nums">{formatPrice(total)}</p></div>
+          <div><span className="eyebrow text-[var(--muted)]">{selectedVariant ? "Total" : "Total a partir de"}</span><p className="mt-1 text-xl font-semibold tabular-nums">{formatPrice(total)}</p></div>
           <button className="button-primary w-full sm:w-auto" disabled={pending} type="submit">
             {pending ? <LoaderCircle className="animate-spin" size={16} /> : <CreditCard size={16} />}
             {pending ? "Abrindo pagamento..." : "Pagar com Mercado Pago"}

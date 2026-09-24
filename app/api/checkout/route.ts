@@ -8,12 +8,14 @@ export const runtime = "nodejs";
 const MAX_CHECKOUT_BODY_BYTES = 16 * 1024;
 
 type ProductRelation = { name: string };
+type ProductVariantRelation = { model: string; price: number; promotional_price: number | null; active: boolean };
 type CheckoutOrder = {
   id: string;
   public_token: string;
   product_id: string;
   product_name: string;
   product_image_url: string | null;
+  selected_model: string | null;
   quantity: number;
   unit_price: number;
   customer_name: string;
@@ -27,6 +29,7 @@ function validationMessage(error: z.ZodError) {
   const messages: Record<string, string> = {
     checkoutAttemptId: "Atualize a página e tente novamente.",
     productId: "Esta peça não foi identificada. Atualize a página e tente novamente.",
+    model: "Selecione uma modelagem.",
     size: "Selecione um tamanho.", color: "Selecione uma cor.",
     quantity: "Escolha uma quantidade entre 1 e 10.",
     "customer.name": "Informe seu nome completo.",
@@ -43,7 +46,7 @@ function sameOrigin(request: Request) {
   try { return new URL(origin).origin === new URL(request.url).origin; } catch { return false; }
 }
 
-const existingOrderSelect = "id,public_token,product_id,product_name,product_image_url,quantity,unit_price,customer_name,customer_email,checkout_url,checkout_fingerprint";
+const existingOrderSelect = "id,public_token,product_id,product_name,product_image_url,selected_model,quantity,unit_price,customer_name,customer_email,checkout_url,checkout_fingerprint";
 
 export async function POST(request: Request) {
   const requestId = request.headers.get("x-vercel-id") ?? crypto.randomUUID();
@@ -89,18 +92,22 @@ export async function POST(request: Request) {
   if (!order) {
     const { data: product, error: productError } = await supabase
       .from("products")
-      .select("id,name,slug,short_description,price,promotional_price,main_image_url,processed_image_url,active,product_sizes(name),product_colors(name)")
+      .select("id,name,slug,short_description,main_image_url,processed_image_url,active,product_variants(model,price,promotional_price,active),product_sizes(name),product_colors(name)")
       .eq("id", input.productId).eq("active", true).maybeSingle();
     if (productError) return Response.json({ error: "Não foi possível consultar esta peça." }, { status: 500 });
     if (!product) return Response.json({ error: "Esta peça não está mais disponível." }, { status: 404 });
 
     const selection = validateProductSelection({
       active: product.active,
-      price: Number(product.price),
-      promotionalPrice: product.promotional_price == null ? null : Number(product.promotional_price),
+      variants: ((product.product_variants ?? []) as ProductVariantRelation[]).map((variant) => ({
+        model: variant.model, price: Number(variant.price),
+        promotionalPrice: variant.promotional_price == null ? null : Number(variant.promotional_price),
+        active: variant.active,
+      })),
       sizes: ((product.product_sizes ?? []) as ProductRelation[]).map((item) => item.name),
       colors: ((product.product_colors ?? []) as ProductRelation[]).map((item) => item.name),
     }, input);
+    if (!selection.ok && selection.error === "model") return Response.json({ error: "Selecione uma modelagem disponível." }, { status: 400 });
     if (!selection.ok && selection.error === "size") return Response.json({ error: "Selecione um tamanho disponível." }, { status: 400 });
     if (!selection.ok && selection.error === "color") return Response.json({ error: "Selecione uma cor disponível." }, { status: 400 });
     if (!selection.ok) return Response.json({ error: "O preço desta peça precisa ser revisado." }, { status: 409 });
@@ -110,7 +117,7 @@ export async function POST(request: Request) {
       checkout_attempt_id: input.checkoutAttemptId, checkout_fingerprint: fingerprint,
       product_id: product.id, product_name: product.name, product_slug: product.slug,
       product_image_url: product.processed_image_url || product.main_image_url,
-      selected_size: input.size || null, selected_color: input.color || null,
+      selected_model: input.model, selected_size: input.size || null, selected_color: input.color || null,
       quantity: input.quantity, unit_price: unitPrice, total_amount: totalAmount,
       customer_name: input.customer.name, customer_email: input.customer.email,
       customer_phone: input.customer.phone, customer_notes: input.customer.notes,
@@ -133,6 +140,7 @@ export async function POST(request: Request) {
     const preference = await createMercadoPagoPreference({
       orderId: order.id, checkoutAttemptId: input.checkoutAttemptId, publicToken: order.public_token,
       productId: order.product_id, productName: order.product_name,
+      selectedModel: order.selected_model || input.model,
       productDescription, productImageUrl: order.product_image_url,
       quantity: Number(order.quantity), unitPrice: Number(order.unit_price),
       customerName: order.customer_name, customerEmail: order.customer_email,

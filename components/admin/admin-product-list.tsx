@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Copy, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { deleteProductAction, duplicateProductAction, toggleProductAction, updatePositionAction } from "@/app/admin/actions";
 import { formatPrice } from "@/lib/format";
+import { getStartingPrice } from "@/lib/product-pricing";
 import type { Product } from "@/types/catalog";
 
 export function AdminProductList({ products }: { products: Product[] }) {
@@ -21,7 +22,7 @@ export function AdminProductList({ products }: { products: Product[] }) {
           <div className="relative aspect-[4/5] w-20 bg-[#e3e0d8] xl:w-auto"><Image src={product.mainImageUrl} alt="" fill sizes="80px" className="object-cover" /></div>
           <div><div className="flex items-center gap-2"><h2 className="font-semibold uppercase tracking-[.02em]">{product.name}</h2><span className={`text-[.6rem] font-bold uppercase ${product.active ? "text-[var(--success)]" : "text-[var(--muted)]"}`}>{product.active ? "Ativo" : "Inativo"}</span></div><p className="mt-1 text-xs text-[var(--muted)]">/{product.slug}</p></div>
           <p className="text-xs font-semibold uppercase tracking-[.05em]">{product.category}</p>
-          <p className="text-sm tabular-nums">{formatPrice(product.promotionalPrice ?? product.price)}</p>
+          <p className="text-sm tabular-nums">A partir de {formatPrice(getStartingPrice(product.variants, product.price))}</p>
           <label className="flex items-center gap-2 text-xs"><span className="xl:sr-only">Posição</span><input className="admin-input w-20" type="number" min="0" defaultValue={product.sortOrder} onBlur={(event) => run(() => updatePositionAction(product.id, Number(event.currentTarget.value)))} /></label>
           <div className="flex flex-wrap items-center gap-1">
             <Link href={`/admin/produtos/${product.id}/editar`} className="grid size-10 place-items-center border fine-rule" aria-label={`Editar ${product.name}`}><Pencil size={15} /></Link>
