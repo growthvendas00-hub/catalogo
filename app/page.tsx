@@ -3,6 +3,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getCatalogSettings, getPublicProductCards } from "@/lib/catalog";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [products, settings] = await Promise.all([getPublicProductCards(), getCatalogSettings()]);
   return (

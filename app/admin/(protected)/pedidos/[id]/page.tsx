@@ -3,9 +3,12 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
 import { ReconcilePaymentForm } from "@/components/admin/reconcile-payment-form";
-import { formatDateTime, formatPrice, onlyDigits } from "@/lib/format";
+import { formatDateTime, formatPrice } from "@/lib/format";
+import { requireAdmin } from "@/lib/auth";
+import { getCatalogSettings } from "@/lib/catalog";
 import { getAdminOrderById } from "@/lib/orders";
 import { fulfillmentStatusLabels, paymentLabel } from "@/lib/order-status";
+import { buildWhatsAppUrl, renderWhatsAppTemplate } from "@/lib/whatsapp";
 
 export const metadata = { title: "Detalhes do pedido — Admin" };
 
@@ -15,9 +18,14 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const order = await getAdminOrderById(id);
+  const [order, settings, user] = await Promise.all([getAdminOrderById(id), getCatalogSettings(), requireAdmin()]);
   if (!order) notFound();
-  const whatsappUrl = `https://wa.me/${onlyDigits(order.customerPhone)}?text=${encodeURIComponent(`Olá, ${order.customerName}! Estamos falando sobre seu pedido de ${order.productName} na Laus Sit.`)}`;
+  const message = renderWhatsAppTemplate(settings.orderWhatsappTemplate, {
+    nome: order.customerName, vendedora: user.email?.split("@")[0] ?? settings.brandName,
+    numero: order.id.slice(0, 8).toUpperCase(), produto: order.productName,
+    total: formatPrice(order.totalAmount), status: paymentLabel(order.paymentStatus), cupom: order.couponCode ?? "",
+  });
+  const whatsappUrl = buildWhatsAppUrl(order.customerPhone, message);
 
   return (
     <main id="conteudo" className="p-4 sm:p-7 lg:p-10">
@@ -31,7 +39,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       <div className="grid gap-10 py-8 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,.55fr)]">
         <div className="space-y-10">
           <section><h2 className="eyebrow mb-4">Item</h2><dl><Row label="Produto">{order.productName}</Row><Row label="Modelagem">{order.selectedModel || "Não informada"}</Row><Row label="Tamanho">{order.selectedSize || "Não informado"}</Row><Row label="Cor">{order.selectedColor || "Não informada"}</Row><Row label="Quantidade">{order.quantity}</Row><Row label="Valor unitário">{formatPrice(order.unitPrice)}</Row><Row label="Total">{formatPrice(order.totalAmount)}</Row>{order.customerNotes && <Row label="Pedido do cliente">{order.customerNotes}</Row>}</dl></section>
-          <section><h2 className="eyebrow mb-4">Cliente</h2><dl><Row label="Nome">{order.customerName}</Row><Row label="E-mail"><a className="underline underline-offset-4" href={`mailto:${order.customerEmail}`}>{order.customerEmail}</a></Row><Row label="WhatsApp"><a className="inline-flex items-center gap-2 underline underline-offset-4" href={whatsappUrl} target="_blank" rel="noreferrer">{order.customerPhone}<ExternalLink size={13} /></a></Row></dl></section>
+          <section><h2 className="eyebrow mb-4">Cliente</h2><dl><Row label="Nome">{order.customerName}</Row><Row label="E-mail"><a className="underline underline-offset-4" href={`mailto:${order.customerEmail}`}>{order.customerEmail}</a></Row><Row label="WhatsApp">{whatsappUrl ? <a className="inline-flex items-center gap-2 underline underline-offset-4" href={whatsappUrl} target="_blank" rel="noreferrer">{order.customerPhone}<ExternalLink size={13} /></a> : order.customerPhone}</Row><Row label="Origem">{order.attributionSource}</Row>{order.couponCode && <Row label="Cupom">{order.couponCode} · desconto {formatPrice(order.discountAmount)}</Row>}</dl></section>
           <section><h2 className="eyebrow mb-4">Mercado Pago</h2><dl><Row label="Situação">{paymentLabel(order.paymentStatus)}</Row><Row label="Detalhe">{order.paymentStatusDetail || "—"}</Row><Row label="ID do pagamento">{order.paymentId || "Aguardando"}</Row><Row label="Forma">{[order.paymentMethod, order.paymentType].filter(Boolean).join(" · ") || "Aguardando"}</Row><Row label="Confirmado em">{order.paidAt ? formatDateTime(order.paidAt) : "Aguardando"}</Row></dl></section>
         </div>
         <aside><OrderStatusForm id={order.id} status={order.fulfillmentStatus} notes={order.adminNotes} /><ReconcilePaymentForm orderId={order.id} /><a className="button-secondary mt-5 w-full" href={`/pedido/${order.publicToken}`} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Ver acompanhamento</a></aside>

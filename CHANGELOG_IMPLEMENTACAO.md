@@ -111,3 +111,24 @@ Validação após implementação:
 - Foram adicionadas páginas de Privacidade, Termos de Uso, Trocas e Devoluções e Entrega, além de campos empresariais configuráveis no admin.
 - A migration `20260920210000_catalog_taxonomy_variants_legal_settings.sql` cria `product_variants`, migra os produtos atuais e atualiza as funções transacionais. Ela foi apenas preparada localmente e não foi executada no Supabase remoto.
 - Validação final: typecheck e lint passaram; 7 arquivos/33 testes Vitest passaram; build de produção passou com 21 páginas; 2 fluxos Playwright passaram em desktop e mobile.
+
+## 24/09/2026 — personalizados por orçamento no WhatsApp
+
+- Adicionada a categoria `Personalizados` à vitrine e ao editor de produtos.
+- Peças personalizadas deixam de exibir preço e checkout público; o CTA abre o WhatsApp do vendedor com a mensagem pronta de orçamento.
+- O campo existente em `Admin → Configurações → Atendimento` foi identificado como `WhatsApp do vendedor`, validado no servidor e reutilizado no fluxo de personalizados.
+- A migration intermediária de personalizados foi consolidada no fechamento operacional de 02/10/2026 antes de ser aplicada.
+
+## 02/10/2026 — fechamento operacional
+
+- Ordem pública fixada em Todas, Matriz africana, Ocultismo e misticismo, Cristianismo e Personalizadas; filtro persiste em `categoria`.
+- Criados cupons percentuais/fixos, link `cupom`/`ref`, cookie httpOnly, visitas sem PII, reservas concorrentes e métricas administrativas.
+- Checkout passou a criar order, desconto e reserva de estoque/cupom em RPC; Mercado Pago recebe o total final. Webhook aprova o uso uma única vez.
+- Estoque opcional foi adicionado por produto/modelagem/tamanho/cor, sem bloquear itens sem quantidade configurada.
+- Criados perfis, login, painel e RLS de vendedores. Cada vendedor lê apenas os próprios pedidos atribuídos.
+- WhatsApp normaliza números brasileiros para `wa.me/55...`, sem `@`, usando template editável com prévia.
+- Admin ganhou Painel, Estoque, Cupons e Vendedores, mantendo Produtos, Pedidos, Imagens e Configurações.
+- Produção deixa de cair em modo demo quando faltar variável; home, produto, pedido, admin e vendedor usam renderização dinâmica.
+- `TESTE`/`testi` e peças com SVG demo são desativados, nunca excluídos.
+- Migration preparada e não executada remotamente: `20261002090000_operational_closeout.sql`.
+- Validação final: typecheck, lint e build de produção passaram; Vitest passou em 9 arquivos/44 testes; Playwright passou nos 2 fluxos desktop/mobile. O primeiro build local revelou e corrigiu uma dependência indevida de Supabase no metadata global.

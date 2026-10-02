@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/env";
-import { slugify } from "@/lib/format";
+import { onlyDigits, slugify } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { GARMENT_MODELS, RELIGIOUS_CATEGORIES } from "@/types/catalog";
+import { CATALOG_CATEGORIES, GARMENT_MODELS } from "@/types/catalog";
 
 export type ActionState = { ok: boolean; message: string; fieldErrors?: Record<string, string[]> };
 
@@ -15,7 +15,7 @@ const productSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2, "Informe o nome da peça."),
   slug: z.string().trim().min(2, "Informe o slug."),
-  category: z.enum(RELIGIOUS_CATEGORIES),
+  category: z.enum(CATALOG_CATEGORIES),
   shortDescription: z.string().trim().min(5, "Escreva uma descrição curta."),
   description: z.string().trim().min(5, "Escreva a descrição completa."),
   active: z.boolean(),
@@ -52,7 +52,7 @@ function jsonField<T>(formData: FormData, name: string, fallback: T): T {
 }
 
 export async function loginAction(_state: ActionState, formData: FormData): Promise<ActionState> {
-  if (!hasSupabaseEnv) redirect("/admin/produtos");
+  if (!hasSupabaseEnv) redirect("/admin/painel");
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const supabase = await createSupabaseServerClient();
@@ -61,7 +61,7 @@ export async function loginAction(_state: ActionState, formData: FormData): Prom
   const { data: { user } } = await supabase.auth.getUser();
   const { data: admin } = await supabase.from("admin_profiles").select("user_id").eq("user_id", user!.id).maybeSingle();
   if (!admin) { await supabase.auth.signOut(); return { ok: false, message: "Este usuário não possui acesso administrativo." }; }
-  redirect("/admin/produtos");
+  redirect("/admin/painel");
 }
 
 export async function logoutAction() {
@@ -145,19 +145,24 @@ export async function updatePositionAction(id: string, sortOrder: number): Promi
 
 export async function saveSettingsAction(_state: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
+  const whatsapp = onlyDigits(String(formData.get("whatsapp") ?? ""));
+  if (whatsapp && !/^\d{10,15}$/.test(whatsapp)) {
+    return { ok: false, message: "Informe o WhatsApp do vendedor com DDI e DDD. Exemplo: 5521999999999.", fieldErrors: { whatsapp: ["Número inválido."] } };
+  }
   const row = {
     id: 1,
     brand_name: String(formData.get("brandName") ?? "Laus Sit"),
     subtitle: String(formData.get("subtitle") ?? ""),
     institutional_text: String(formData.get("institutionalText") ?? ""),
     logo_url: String(formData.get("logoUrl") ?? "") || null,
-    whatsapp: String(formData.get("whatsapp") ?? "") || null,
+    whatsapp: whatsapp || null,
     instagram: String(formData.get("instagram") ?? "") || null,
     legal_name: String(formData.get("legalName") ?? "").trim() || null,
     tax_id: String(formData.get("taxId") ?? "").trim() || null,
     contact_email: String(formData.get("contactEmail") ?? "").trim().toLowerCase() || null,
     business_address: String(formData.get("businessAddress") ?? "").trim() || null,
     whatsapp_message: String(formData.get("whatsappMessage") ?? ""),
+    order_whatsapp_template: String(formData.get("orderWhatsappTemplate") ?? "").trim(),
     footer_text: String(formData.get("footerText") ?? ""),
     show_colors: formData.get("showColors") === "on",
     show_measurements: formData.get("showMeasurements") === "on",
@@ -167,6 +172,6 @@ export async function saveSettingsAction(_state: ActionState, formData: FormData
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("catalog_settings").upsert(row);
   if (error) return { ok: false, message: error.message };
-  revalidatePath("/"); revalidatePath("/admin/configuracoes");
+  revalidatePath("/"); revalidatePath("/admin/configuracoes"); revalidatePath("/produto/[slug]", "page");
   return { ok: true, message: "Configurações salvas." };
 }

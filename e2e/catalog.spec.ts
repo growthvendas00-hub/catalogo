@@ -3,9 +3,11 @@ import { expect, test } from "@playwright/test";
 test("catalog filters religions, prices from the cheapest model and exposes legal pages", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /vestir ideias/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cristianismo" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Todas" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Matriz africana" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Ocultismo e misticismo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Personalizadas" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Categorias do catálogo" }).getByRole("button")).toHaveText(["Todas", "Matriz africana", "Ocultismo e misticismo", "Cristianismo", "Personalizadas"]);
   await expect(page.getByText(/A partir de R\$/).first()).toBeVisible();
 
   await page.goto("/produto/oversized-algodao-40-1");
@@ -23,6 +25,12 @@ test("catalog filters religions, prices from the cheapest model and exposes lega
 
   await page.goto("/privacidade");
   await expect(page.getByRole("heading", { name: "Política de Privacidade" })).toBeVisible();
+
+  await page.goto("/produto/oversized-personalizada");
+  await expect(page.getByText("Produção sob orçamento")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pagar com Mercado Pago" })).toHaveCount(0);
+  const quoteLink = page.getByRole("link", { name: "Pedir orçamento pelo WhatsApp" });
+  await expect(quoteLink).toHaveAttribute("href", /wa\.me\/5511999999999\?text=Oi%2C%20vim%20do%20site/);
 });
 
 test("mobile catalog and admin remain usable", async ({ page }) => {
@@ -33,9 +41,14 @@ test("mobile catalog and admin remain usable", async ({ page }) => {
 
   await page.goto("/admin/produtos");
   await expect(page.getByRole("navigation", { name: "Administração" }).getByText("Pedidos")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Administração" }).getByText("Cupons")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Administração" }).getByText("Vendedores")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
   await page.goto("/admin/produtos/novo");
+  await expect(page.getByRole("option", { name: "Personalizadas" })).toBeAttached();
   await expect(page.getByRole("group", { name: "Tradicional" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Baby Look" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Oversized" })).toBeVisible();
+  await page.goto("/admin/configuracoes");
+  await expect(page.getByRole("textbox", { name: "WhatsApp do vendedor" })).toBeVisible();
 });

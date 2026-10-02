@@ -34,9 +34,9 @@ const seeds: DemoSeed[] = [
   { name: "Baby Look Algodão", slug: "baby-look-algodao", category: "Matriz africana", price: 85, composition: "100% algodão", sizes: ["PP", "P", "M", "G", "GG"], colors: [{ name: "Branco", hex: "#FFFFFF" }, { name: "Off-white", hex: "#EEEAE0" }] },
   { name: "Baby Look PV Antipilling", slug: "baby-look-pv-antipilling", category: "Matriz africana", price: 75, composition: "67% poliéster, 33% viscose", sizes: ["PP", "P", "M", "G"], finish: "Tratamento antipilling", colors: [{ name: "Cinza", hex: "#888985" }, { name: "Vinho", hex: "#6D2635" }] },
   { name: "Oversized Essentials", slug: "oversized-essentials", category: "Ocultismo e misticismo", price: 125, composition: "100% algodão", sizes: ["P", "M", "G", "GG", "G1"], threadType: "Fio 30.1 premium", colors: [{ name: "Off-white", hex: "#EEEAE0" }, { name: "Preto", hex: "#171717" }] },
-  { name: "Oversized Personalizada", slug: "oversized-personalizada", category: "Ocultismo e misticismo", price: 140, composition: "100% algodão", sizes: ["P", "M", "G", "GG", "G1"], printingMethod: "DTF, silk ou bordado — sob consulta", colors: [{ name: "Preto", hex: "#171717" }, { name: "Branco", hex: "#FFFFFF" }] },
-  { name: "Tradicional Personalizada", slug: "tradicional-personalizada", category: "Cristianismo", price: 115, composition: "100% algodão", sizes: ["P", "M", "G", "GG"], printingMethod: "DTF ou silk — sob consulta", colors: [{ name: "Branco", hex: "#FFFFFF" }, { name: "Vinho", hex: "#6D2635" }] },
-  { name: "Baby Look Personalizada", slug: "baby-look-personalizada", category: "Ocultismo e misticismo", price: 95, composition: "100% algodão", sizes: ["PP", "P", "M", "G"], printingMethod: "DTF ou silk — sob consulta", colors: [{ name: "Off-white", hex: "#EEEAE0" }, { name: "Cinza", hex: "#888985" }] },
+  { name: "Oversized Personalizada", slug: "oversized-personalizada", category: "Personalizadas", price: 140, composition: "100% algodão", sizes: ["P", "M", "G", "GG", "G1"], printingMethod: "DTF, silk ou bordado — sob consulta", colors: [{ name: "Preto", hex: "#171717" }, { name: "Branco", hex: "#FFFFFF" }] },
+  { name: "Tradicional Personalizada", slug: "tradicional-personalizada", category: "Personalizadas", price: 115, composition: "100% algodão", sizes: ["P", "M", "G", "GG"], printingMethod: "DTF ou silk — sob consulta", colors: [{ name: "Branco", hex: "#FFFFFF" }, { name: "Vinho", hex: "#6D2635" }] },
+  { name: "Baby Look Personalizada", slug: "baby-look-personalizada", category: "Personalizadas", price: 95, composition: "100% algodão", sizes: ["PP", "P", "M", "G"], printingMethod: "DTF ou silk — sob consulta", colors: [{ name: "Off-white", hex: "#EEEAE0" }, { name: "Cinza", hex: "#888985" }] },
 ];
 
 export const demoProducts: Product[] = seeds.map((seed, index) => ({
@@ -76,6 +76,7 @@ export const demoSettings: CatalogSettings = {
   contactEmail: null,
   businessAddress: null,
   whatsappMessage: "Olá! Gostaria de saber mais sobre a peça {produto}.",
+  orderWhatsappTemplate: "Oi {nome}, sou {vendedora} e estou entrando em contato sobre o seu pedido {numero}. Tudo bem?",
   footerText: "Laus Sit — feito com cuidado, para vestir do seu jeito.",
   showColors: true,
   showMeasurements: true,

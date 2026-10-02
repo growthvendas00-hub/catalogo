@@ -15,6 +15,7 @@ type CreatePreferenceInput = {
   productImageUrl: string | null;
   quantity: number;
   unitPrice: number;
+  totalAmount: number;
   customerName: string;
   customerEmail: string;
   origin: string;
@@ -80,8 +81,8 @@ export async function createMercadoPagoPreference(input: CreatePreferenceInput) 
         description: input.productDescription,
         picture_url: absoluteImageUrl(input.productImageUrl, input.origin),
         currency_id: "BRL",
-        quantity: input.quantity,
-        unit_price: input.unitPrice,
+        quantity: 1,
+        unit_price: input.totalAmount,
       }],
       payer: { name: input.customerName, email: input.customerEmail },
       external_reference: input.orderId,
@@ -92,6 +93,8 @@ export async function createMercadoPagoPreference(input: CreatePreferenceInput) 
         failure: `${orderUrl}?resultado=falha`,
       },
       auto_return: "approved",
+      expires: true,
+      expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       statement_descriptor: "LAUS SIT",
       metadata: { order_id: input.orderId },
     }),

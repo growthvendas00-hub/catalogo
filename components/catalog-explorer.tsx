@@ -4,16 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
-import { RELIGIOUS_CATEGORIES, type Category, type PublicProductCard } from "@/types/catalog";
+import { CATALOG_FILTERS, CUSTOM_CATEGORY, type CatalogFilter, type PublicProductCard } from "@/types/catalog";
 
-const filters: Category[] = [...RELIGIOUS_CATEGORIES];
+const filters: CatalogFilter[] = [...CATALOG_FILTERS];
 
 export function CatalogExplorer({ products }: { products: PublicProductCard[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedCategory = searchParams.get("categoria");
-  const category = filters.includes(requestedCategory as Category) ? requestedCategory as Category : "Cristianismo";
+  const category = filters.includes(requestedCategory as CatalogFilter) ? requestedCategory as CatalogFilter : "Todas";
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   useEffect(() => {
     const syncFromHistory = () => setQuery(new URLSearchParams(window.location.search).get("q") ?? "");
@@ -23,7 +23,7 @@ export function CatalogExplorer({ products }: { products: PublicProductCard[] })
   const updateCategory = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (query) params.set("q", query); else params.delete("q");
-    if (value === "Cristianismo") params.delete("categoria"); else params.set("categoria", value);
+    if (value === "Todas") params.delete("categoria"); else params.set("categoria", value);
     const next = params.toString();
     router.push(next ? `${pathname}?${next}` : pathname, { scroll: false });
   };
@@ -37,7 +37,7 @@ export function CatalogExplorer({ products }: { products: PublicProductCard[] })
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
     return products.filter((product) =>
-      product.category === category &&
+      (category === "Todas" || product.category === category) &&
       (!normalized || `${product.name} ${product.category}`.toLocaleLowerCase("pt-BR").includes(normalized)),
     );
   }, [category, products, query]);
@@ -45,20 +45,20 @@ export function CatalogExplorer({ products }: { products: PublicProductCard[] })
   return (
     <section id="catalogo" aria-labelledby="catalog-title">
       <div className="flex flex-col border-y fine-rule sm:flex-row sm:items-stretch">
-        <div className="filter-scroll flex min-w-0 flex-1 overflow-x-auto px-[var(--page-gutter)]" role="group" aria-label="Filtrar por religião">
+        <nav className="filter-scroll flex min-w-0 flex-1 snap-x overflow-x-auto px-[var(--page-gutter)]" aria-label="Categorias do catálogo">
           {filters.map((filter) => (
             <button
               key={filter}
               type="button"
               onClick={() => updateCategory(filter)}
               aria-pressed={category === filter}
-              className={`min-h-14 shrink-0 border-b-2 px-3 text-[.66rem] font-bold tracking-[.11em] uppercase transition-colors sm:px-4 ${category === filter ? "border-black text-black" : "border-transparent text-[var(--muted)] hover:text-black"}`}
+              className={`min-h-16 shrink-0 snap-start border-b-2 px-3 text-[.7rem] font-semibold tracking-[.07em] transition-colors sm:px-5 ${category === filter ? "border-[var(--accent)] text-black" : "border-transparent text-[var(--muted)] hover:text-black"}`}
             >{filter}</button>
           ))}
-        </div>
+        </nav>
         <label className="flex min-h-14 items-center gap-2 border-t fine-rule px-[var(--page-gutter)] sm:w-80 sm:border-l sm:border-t-0">
           <Search aria-hidden size={16} strokeWidth={1.5} />
-          <span className="sr-only">Buscar por nome ou religião</span>
+          <span className="sr-only">Buscar por nome ou categoria</span>
           <input value={query} onChange={(event) => updateQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#686963]" placeholder="BUSCAR PEÇA" />
           {query && <button type="button" className="grid size-11 shrink-0 place-items-center" onClick={() => updateQuery("")} aria-label="Limpar busca"><X size={15} /></button>}
         </label>
@@ -70,7 +70,7 @@ export function CatalogExplorer({ products }: { products: PublicProductCard[] })
         </div>
       ) : (
         <div className="grid min-h-80 place-items-center border-b fine-rule px-6 text-center">
-          <div><p className="eyebrow mb-3">Nenhuma peça encontrada</p><p className="text-sm text-[var(--muted)]">Tente outra religião ou termo de busca.</p></div>
+          <div>{category === CUSTOM_CATEGORY && !query ? <><p className="eyebrow mb-3">Feito com você</p><p className="max-w-md text-base leading-relaxed text-[var(--muted)]">Peças personalizadas entram por aqui. Em breve, novos projetos sob medida vão ocupar este espaço.</p></> : <><p className="eyebrow mb-3">Nenhuma peça encontrada</p><p className="text-sm text-[var(--muted)]">Tente outra categoria ou termo de busca.</p></>}</div>
         </div>
       )}
     </section>

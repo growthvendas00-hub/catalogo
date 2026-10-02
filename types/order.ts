@@ -26,7 +26,13 @@ export type Order = {
   selectedColor: string | null;
   quantity: number;
   unitPrice: number;
+  subtotalAmount: number;
+  discountAmount: number;
   totalAmount: number;
+  couponId: string | null;
+  couponCode: string | null;
+  attributionSource: string;
+  sellerId: string | null;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -55,7 +61,10 @@ export type PublicOrder = Pick<
   | "selectedColor"
   | "quantity"
   | "unitPrice"
+  | "subtotalAmount"
+  | "discountAmount"
   | "totalAmount"
+  | "couponCode"
   | "paymentStatus"
   | "paymentStatusDetail"
   | "fulfillmentStatus"

@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { getPublicProductCards } from "@/lib/catalog";
 import { resolveSiteUrl } from "@/lib/site-url";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = resolveSiteUrl().origin;
   const products = await getPublicProductCards();

@@ -1,9 +1,10 @@
 import { MessageCircle } from "lucide-react";
 import { CheckoutForm } from "@/components/checkout-form";
 import { DEMO_MEASUREMENTS_NOTICE } from "@/lib/demo-data";
-import { formatPrice, onlyDigits } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { effectiveVariantPrice, getStartingPrice } from "@/lib/product-pricing";
-import type { CatalogSettings, Product } from "@/types/catalog";
+import { buildWhatsAppUrl, CUSTOM_QUOTE_MESSAGE } from "@/lib/whatsapp";
+import { CUSTOM_CATEGORY, type CatalogSettings, type Product } from "@/types/catalog";
 
 function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
@@ -11,24 +12,26 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
 }
 
 export function ProductDetails({ product, settings, demoMode, checkoutEnabled }: { product: Product; settings: CatalogSettings; demoMode: boolean; checkoutEnabled: boolean }) {
+  const isCustom = product.category === CUSTOM_CATEGORY;
   const price = getStartingPrice(product.variants, product.price);
   const whatsappText = settings.whatsappMessage.replace("{produto}", product.name);
-  const whatsappUrl = settings.whatsapp ? `https://wa.me/${onlyDigits(settings.whatsapp)}?text=${encodeURIComponent(whatsappText)}` : null;
+  const whatsappUrl = buildWhatsAppUrl(settings.whatsapp, isCustom ? CUSTOM_QUOTE_MESSAGE : whatsappText);
   return (
     <div className="px-[var(--page-gutter)] py-8 sm:py-12 lg:sticky lg:top-0 lg:max-h-screen lg:overflow-y-auto">
       <p className="eyebrow text-[var(--muted)]">{product.category}</p>
       <h1 className="mt-3 max-w-[17ch] text-3xl font-medium leading-[.98] tracking-[-.045em] uppercase sm:text-5xl">{product.name}</h1>
       <div className="mt-5 flex items-baseline gap-3">
-        <p className="text-xl font-semibold tabular-nums">A partir de {formatPrice(price)}</p>
+        <p className="text-xl font-semibold tabular-nums">{isCustom ? "Produção sob orçamento" : `A partir de ${formatPrice(price)}`}</p>
       </div>
       <p className="mt-7 max-w-xl text-base leading-relaxed text-black/70">{product.shortDescription}</p>
-      {checkoutEnabled && <CheckoutForm productId={product.id} variants={product.variants} sizes={product.sizes} colors={product.colors} />}
-      {!checkoutEnabled && !demoMode && <p className="mt-7 border-l-2 border-[var(--accent)] pl-4 text-sm leading-relaxed text-black/65">A compra online está em configuração. Enquanto isso, fale com a Laus Sit pelo WhatsApp.</p>}
-      {whatsappUrl && <a className={`${checkoutEnabled ? "button-secondary" : "button-primary"} mt-5 w-full sm:w-auto`} href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden /> Falar sobre esta peça</a>}
+      {!isCustom && checkoutEnabled && <CheckoutForm productId={product.id} variants={product.variants} sizes={product.sizes} colors={product.colors} />}
+      {!isCustom && !checkoutEnabled && !demoMode && <p className="mt-7 border-l-2 border-[var(--accent)] pl-4 text-sm leading-relaxed text-black/65">A compra online está em configuração. Enquanto isso, fale com a Laus Sit pelo WhatsApp.</p>}
+      {isCustom && <div className="mt-7 border-t fine-rule pt-6"><p className="max-w-xl text-sm leading-relaxed text-black/70">Conte sua ideia diretamente ao vendedor para receber orientações de modelo, quantidade, estampa e valor.</p>{whatsappUrl ? <a className="button-primary mt-5 w-full sm:w-auto" href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden /> Pedir orçamento pelo WhatsApp</a> : <p className="mt-4 border-l-2 border-[var(--accent)] pl-4 text-sm text-black/65">O atendimento por WhatsApp está temporariamente indisponível.</p>}</div>}
+      {!isCustom && whatsappUrl && <a className={`${checkoutEnabled ? "button-secondary" : "button-primary"} mt-5 w-full sm:w-auto`} href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden /> Falar sobre esta peça</a>}
 
       <div className="mt-12 space-y-10">
         <section><h2 className="eyebrow mb-4">Sobre a peça</h2><p className="max-w-xl text-sm leading-7 text-black/70">{product.description}</p></section>
-        <section><h2 className="eyebrow mb-4">Modelagens e preços</h2><ul className="grid gap-2 sm:grid-cols-3">{product.variants.filter((variant) => variant.active).map((variant) => <li key={variant.model} className="border fine-rule p-3"><span className="block text-xs font-semibold uppercase tracking-[.05em]">{variant.model}</span><span className="mt-1 block text-sm tabular-nums">{formatPrice(effectiveVariantPrice(variant))}</span>{variant.promotionalPrice && <span className="mt-1 block text-xs text-[var(--muted)] line-through">{formatPrice(variant.price)}</span>}</li>)}</ul></section>
+        <section><h2 className="eyebrow mb-4">{isCustom ? "Modelagens disponíveis" : "Modelagens e preços"}</h2><ul className="grid gap-2 sm:grid-cols-3">{product.variants.filter((variant) => variant.active).map((variant) => <li key={variant.model} className="border fine-rule p-3"><span className="block text-xs font-semibold uppercase tracking-[.05em]">{variant.model}</span>{!isCustom && <><span className="mt-1 block text-sm tabular-nums">{formatPrice(effectiveVariantPrice(variant))}</span>{variant.promotionalPrice && <span className="mt-1 block text-xs text-[var(--muted)] line-through">{formatPrice(variant.price)}</span>}</>}</li>)}</ul></section>
         {settings.showColors && product.colors.length > 0 && <section><h2 className="eyebrow mb-4">Cores disponíveis</h2><ul className="flex flex-wrap gap-x-6 gap-y-3">{product.colors.map((color) => <li key={color.name} className="flex items-center gap-2 text-sm"><span aria-hidden className="size-4 rounded-full border border-black/30" style={{ backgroundColor: color.hex ?? "transparent" }} />{color.name}</li>)}</ul></section>}
         <section><h2 className="eyebrow mb-4">Tamanhos</h2><div className="flex flex-wrap gap-2">{product.sizes.map((size) => <span key={size} className="grid min-h-11 min-w-11 place-items-center border fine-rule px-3 text-xs font-semibold">{size}</span>)}</div></section>
         {settings.showTechnicalSheet && <section><h2 className="eyebrow mb-4">Ficha técnica</h2><dl><DetailRow label="Tema" value={product.category} /><DetailRow label="Tecido" value={product.fabric} /><DetailRow label="Composição" value={product.composition} /><DetailRow label="Fio" value={product.threadType} /><DetailRow label="Caimento" value={product.fit} /><DetailRow label="Gramatura" value={product.gsm} /><DetailRow label="Estampa" value={product.printingMethod} /><DetailRow label="Acabamento" value={product.finish} /><DetailRow label="Notas técnicas" value={product.technicalNotes} /></dl></section>}

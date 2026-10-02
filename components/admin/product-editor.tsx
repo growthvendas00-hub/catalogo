@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { saveProductAction, type ActionState } from "@/app/admin/actions";
 import { slugify } from "@/lib/format";
-import { GARMENT_MODELS, RELIGIOUS_CATEGORIES, type Product, type ProductColor, type ProductImage, type ProductMeasurement, type ProductVariant } from "@/types/catalog";
+import { CATALOG_CATEGORIES, GARMENT_MODELS, type Product, type ProductColor, type ProductImage, type ProductMeasurement, type ProductVariant } from "@/types/catalog";
 
 const initialState: ActionState = { ok: false, message: "" };
 const emptyProduct: Product = {
@@ -46,7 +46,7 @@ export function ProductEditor({ product: initialProduct }: { product?: Product }
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="admin-label sm:col-span-2">Nome<FieldError errors={state.fieldErrors?.name} /><input className="admin-input" name="name" value={name} onChange={(event) => changeName(event.target.value)} required /></label>
         <label className="admin-label">Slug<FieldError errors={state.fieldErrors?.slug} /><input className="admin-input" name="slug" value={slug} onChange={(event) => { setSlugTouched(true); setSlug(slugify(event.target.value)); }} required /></label>
-        <label className="admin-label">Religião / linha<select className="admin-input" name="category" defaultValue={product.category}>{RELIGIOUS_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></label>
+        <label className="admin-label">Categoria / linha<select className="admin-input" name="category" defaultValue={product.category}>{CATALOG_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></label>
         <label className="admin-label sm:col-span-2">Descrição curta<FieldError errors={state.fieldErrors?.shortDescription} /><textarea className="admin-input min-h-24 normal-case tracking-normal" name="shortDescription" defaultValue={product.shortDescription} required /></label>
         <label className="admin-label sm:col-span-2">Descrição completa<FieldError errors={state.fieldErrors?.description} /><textarea className="admin-input min-h-36 normal-case tracking-normal" name="description" defaultValue={product.description} required /></label>
         <label className="admin-label">Posição no catálogo<input className="admin-input" name="sortOrder" type="number" min="0" defaultValue={product.sortOrder} /></label>

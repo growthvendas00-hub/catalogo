@@ -9,6 +9,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { getCatalogSettings, getProductBySlug } from "@/lib/catalog";
 import { hasCheckoutEnv, isDemoMode } from "@/lib/env";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const [product, settings] = await Promise.all([getProductBySlug(slug), getCatalogSettings()]);

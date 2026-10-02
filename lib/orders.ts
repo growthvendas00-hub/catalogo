@@ -6,8 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Order, PublicOrder } from "@/types/order";
 
 type DbOrder = Record<string, unknown>;
-const orderSelect = "id,public_token,product_id,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,total_amount,customer_name,customer_email,customer_phone,customer_notes,payment_status,payment_status_detail,fulfillment_status,admin_notes,mercado_pago_preference_id,mercado_pago_payment_id,mercado_pago_payment_method,mercado_pago_payment_type,paid_at,created_at,updated_at";
-const publicOrderSelect = "id,public_token,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,total_amount,payment_status,payment_status_detail,fulfillment_status,paid_at,created_at,updated_at";
+export const orderSelect = "id,public_token,product_id,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,subtotal_amount,discount_amount,total_amount,coupon_id,coupon_code,attribution_source,seller_id,customer_name,customer_email,customer_phone,customer_notes,payment_status,payment_status_detail,fulfillment_status,admin_notes,mercado_pago_preference_id,mercado_pago_payment_id,mercado_pago_payment_method,mercado_pago_payment_type,paid_at,created_at,updated_at";
+const publicOrderSelect = "id,public_token,product_name,product_slug,product_image_url,selected_model,selected_size,selected_color,quantity,unit_price,subtotal_amount,discount_amount,total_amount,coupon_code,payment_status,payment_status_detail,fulfillment_status,paid_at,created_at,updated_at";
 
 export function mapOrder(row: DbOrder): Order {
   return {
@@ -22,7 +22,13 @@ export function mapOrder(row: DbOrder): Order {
     selectedColor: row.selected_color ? String(row.selected_color) : null,
     quantity: Number(row.quantity),
     unitPrice: Number(row.unit_price),
+    subtotalAmount: Number(row.subtotal_amount ?? row.total_amount),
+    discountAmount: Number(row.discount_amount ?? 0),
     totalAmount: Number(row.total_amount),
+    couponId: row.coupon_id ? String(row.coupon_id) : null,
+    couponCode: row.coupon_code ? String(row.coupon_code) : null,
+    attributionSource: String(row.attribution_source ?? "direta"),
+    sellerId: row.seller_id ? String(row.seller_id) : null,
     customerName: String(row.customer_name),
     customerEmail: String(row.customer_email),
     customerPhone: String(row.customer_phone),
@@ -52,7 +58,10 @@ export function mapPublicOrder(row: DbOrder): PublicOrder {
     selectedColor: row.selected_color ? String(row.selected_color) : null,
     quantity: Number(row.quantity),
     unitPrice: Number(row.unit_price),
+    subtotalAmount: Number(row.subtotal_amount ?? row.total_amount),
+    discountAmount: Number(row.discount_amount ?? 0),
     totalAmount: Number(row.total_amount),
+    couponCode: row.coupon_code ? String(row.coupon_code) : null,
     paymentStatus: String(row.payment_status),
     paymentStatusDetail: row.payment_status_detail ? String(row.payment_status_detail) : null,
     fulfillmentStatus: row.fulfillment_status as PublicOrder["fulfillmentStatus"],

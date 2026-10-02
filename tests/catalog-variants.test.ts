@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { getStartingPrice } from "@/lib/product-pricing";
 
 const migration = readFileSync(path.resolve("supabase/migrations/20260920210000_catalog_taxonomy_variants_legal_settings.sql"), "utf8").toLowerCase();
+const closeoutMigration = readFileSync(path.resolve("supabase/migrations/20261002090000_operational_closeout.sql"), "utf8").toLowerCase();
 
 describe("religious catalog and model pricing", () => {
   it("uses the least active model price in the storefront", () => {
@@ -29,6 +30,13 @@ describe("religious catalog and model pricing", () => {
     expect(migration).toContain("insert into public.product_variants");
     expect(migration).toContain("delete from public.product_variants");
     expect(migration).toContain("add column if not exists legal_name");
+  });
+
+  it("adds the official personalized category and deactivates placeholders without deleting orders", () => {
+    expect(closeoutMigration).toContain("'personalizadas'");
+    expect(closeoutMigration).toContain("lower(trim(slug)) = 'testi'");
+    expect(closeoutMigration).toContain("like '/demo-products/%.svg'");
+    expect(closeoutMigration).not.toContain("delete from public.products");
   });
 
   it.each(["privacidade", "termos-de-uso", "trocas-e-devolucoes", "entrega"])("ships the %s legal page", (route) => {

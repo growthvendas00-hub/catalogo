@@ -47,3 +47,4 @@ export default async function OrderPage({ params, searchParams }: {
     </main>
   );
 }
+export const dynamic = "force-dynamic";

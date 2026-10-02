@@ -3,8 +3,8 @@ import { hasSupabaseEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function AdminIndex() {
-  if (!hasSupabaseEnv) redirect("/admin/produtos");
+  if (!hasSupabaseEnv) redirect("/admin/painel");
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  redirect(user ? "/admin/produtos" : "/admin/login");
+  redirect(user ? "/admin/painel" : "/admin/login");
 }

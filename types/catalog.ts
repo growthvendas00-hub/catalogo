@@ -1,5 +1,9 @@
-export const RELIGIOUS_CATEGORIES = ["Cristianismo", "Matriz africana", "Ocultismo e misticismo"] as const;
-export type Category = (typeof RELIGIOUS_CATEGORIES)[number];
+export const RELIGIOUS_CATEGORIES = ["Matriz africana", "Ocultismo e misticismo", "Cristianismo"] as const;
+export const CUSTOM_CATEGORY = "Personalizadas" as const;
+export const CATALOG_CATEGORIES = [...RELIGIOUS_CATEGORIES, CUSTOM_CATEGORY] as const;
+export const CATALOG_FILTERS = ["Todas", ...CATALOG_CATEGORIES] as const;
+export type Category = (typeof CATALOG_CATEGORIES)[number];
+export type CatalogFilter = (typeof CATALOG_FILTERS)[number];
 
 export const GARMENT_MODELS = ["Tradicional", "Baby Look", "Oversized"] as const;
 export type GarmentModel = (typeof GARMENT_MODELS)[number];
@@ -82,6 +86,7 @@ export type CatalogSettings = {
   contactEmail?: string | null;
   businessAddress?: string | null;
   whatsappMessage: string;
+  orderWhatsappTemplate: string;
   footerText: string;
   showColors: boolean;
   showMeasurements: boolean;

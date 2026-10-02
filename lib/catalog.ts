@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { demoProducts, demoSettings } from "@/lib/demo-data";
-import { hasSupabaseEnv } from "@/lib/env";
+import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
 import { getStartingPrice } from "@/lib/product-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CatalogSettings, Category, Product, PublicProductCard } from "@/types/catalog";
@@ -74,10 +74,11 @@ const productSelect = [
 ].join(",");
 const productCardSelect = "id,name,slug,category,price,sort_order,main_image_url,main_image_alt,processed_image_url,product_variants(id,model,price,promotional_price,active,sort_order)";
 
-const settingsSelect = "brand_name,subtitle,institutional_text,logo_url,whatsapp,instagram,legal_name,tax_id,contact_email,business_address,whatsapp_message,footer_text,show_colors,show_measurements,show_technical_sheet";
+const settingsSelect = "brand_name,subtitle,institutional_text,logo_url,whatsapp,instagram,legal_name,tax_id,contact_email,business_address,whatsapp_message,order_whatsapp_template,footer_text,show_colors,show_measurements,show_technical_sheet";
 
 export const getPublicProducts = cache(async (): Promise<Product[]> => {
-  if (!hasSupabaseEnv) return demoProducts;
+  if (isDemoMode) return demoProducts;
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("active", true).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar o catálogo: ${error.message}`);
@@ -85,7 +86,8 @@ export const getPublicProducts = cache(async (): Promise<Product[]> => {
 });
 
 export const getPublicProductCards = cache(async (): Promise<PublicProductCard[]> => {
-  if (!hasSupabaseEnv) return demoProducts.map(({ id, name, slug, category, price, sortOrder, mainImageUrl, mainImageAlt, variants }) => ({ id, name, slug, category, sortOrder, mainImageUrl, mainImageAlt, startingPrice: getStartingPrice(variants, price) }));
+  if (isDemoMode) return demoProducts.map(({ id, name, slug, category, price, sortOrder, mainImageUrl, mainImageAlt, variants }) => ({ id, name, slug, category, sortOrder, mainImageUrl, mainImageAlt, startingPrice: getStartingPrice(variants, price) }));
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productCardSelect).eq("active", true).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar o catálogo: ${error.message}`);
@@ -105,7 +107,8 @@ export const getPublicProductCards = cache(async (): Promise<PublicProductCard[]
 });
 
 export const getAllProducts = cache(async (): Promise<Product[]> => {
-  if (!hasSupabaseEnv) return demoProducts;
+  if (isDemoMode) return demoProducts;
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).order("sort_order");
   if (error) throw new Error(`Não foi possível carregar os produtos: ${error.message}`);
@@ -113,7 +116,8 @@ export const getAllProducts = cache(async (): Promise<Product[]> => {
 });
 
 export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
-  if (!hasSupabaseEnv) return demoProducts.find((product) => product.slug === slug && product.active) ?? null;
+  if (isDemoMode) return demoProducts.find((product) => product.slug === slug && product.active) ?? null;
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("slug", slug).eq("active", true).maybeSingle();
   if (error) throw new Error(`Não foi possível carregar a peça: ${error.message}`);
@@ -121,7 +125,8 @@ export const getProductBySlug = cache(async (slug: string): Promise<Product | nu
 });
 
 export const getProductById = cache(async (id: string): Promise<Product | null> => {
-  if (!hasSupabaseEnv) return demoProducts.find((product) => product.id === id) ?? null;
+  if (isDemoMode) return demoProducts.find((product) => product.id === id) ?? null;
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("products").select(productSelect).eq("id", id).maybeSingle();
   if (error) throw new Error(`Não foi possível carregar a peça: ${error.message}`);
@@ -129,10 +134,11 @@ export const getProductById = cache(async (id: string): Promise<Product | null> 
 });
 
 export const getCatalogSettings = cache(async (): Promise<CatalogSettings> => {
-  if (!hasSupabaseEnv) return demoSettings;
+  if (isDemoMode) return demoSettings;
+  if (!hasSupabaseEnv) throw new Error("Supabase não configurado em produção.");
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("catalog_settings").select(settingsSelect).eq("id", 1).maybeSingle();
-  if (error || !data) return demoSettings;
+  if (error || !data) throw new Error(`Não foi possível carregar as configurações: ${error?.message ?? "registro ausente"}`);
   return {
     brandName: data.brand_name,
     subtitle: data.subtitle,
@@ -145,6 +151,7 @@ export const getCatalogSettings = cache(async (): Promise<CatalogSettings> => {
     contactEmail: data.contact_email,
     businessAddress: data.business_address,
     whatsappMessage: data.whatsapp_message,
+    orderWhatsappTemplate: data.order_whatsapp_template,
     footerText: data.footer_text,
     showColors: data.show_colors,
     showMeasurements: data.show_measurements,
