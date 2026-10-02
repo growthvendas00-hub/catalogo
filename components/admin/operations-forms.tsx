@@ -36,6 +36,14 @@ export function CouponLink({ code, baseUrl }: { code: string; baseUrl: string })
   return <div className="flex min-w-0 items-center gap-2"><code className="min-w-0 truncate text-xs">{link}</code><button type="button" className="grid size-11 shrink-0 place-items-center border fine-rule" aria-label={`Copiar link ${code}`} onClick={async()=>{await navigator.clipboard.writeText(link);setCopied(true);}}><Copy size={15}/></button><span className="sr-only" role="status">{copied?"Copiado":""}</span></div>;
 }
 
+export function CopyableUrl({ label, url }: { label: string; url: string }) {
+  const [copied, setCopied] = useState(false);
+  return <div className="border-y fine-rule bg-[var(--paper-bright)] p-4 sm:flex sm:items-center sm:justify-between sm:gap-6">
+    <div className="min-w-0"><p className="eyebrow text-[var(--muted)]">{label}</p><a className="mt-2 block truncate text-sm font-semibold underline underline-offset-4 sm:text-base" href={url} target="_blank" rel="noreferrer">{url}</a></div>
+    <button type="button" className="button-secondary mt-4 w-full shrink-0 sm:mt-0 sm:w-auto" onClick={async()=>{await navigator.clipboard.writeText(url);setCopied(true);}}><Copy size={15}/>{copied?"Link copiado":"Copiar link"}</button>
+  </div>;
+}
+
 export function InventoryForm({ products }: { products: Option[] }) {
   const [state, action, pending] = useActionState(saveInventoryAction, initial);
   return <form action={action} className="grid gap-4 border-y fine-rule bg-[var(--paper-bright)] p-5 sm:grid-cols-2 xl:grid-cols-4">
